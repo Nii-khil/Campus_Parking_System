@@ -1,0 +1,16 @@
+# Node.js modules
+node_modules/
+
+# Build output
+/build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Environment variables
+.env
+
+# Cache files
+.cache/
