@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
-const LoginPage = () => {
+const LoginPage = ({ setIsAuthenticated }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
-
+  const navigate = useNavigate();
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
@@ -19,6 +19,9 @@ const LoginPage = () => {
 
       if (response.status === 200) {
         setMessage('Login successful!');
+        localStorage.setItem('isAuthenticated', 'true');
+        setIsAuthenticated(true);
+        navigate('/');
         // Save user data (e.g., in local storage or context)
       } else {
         setMessage(data.message);
