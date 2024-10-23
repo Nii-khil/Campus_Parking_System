@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 const db = mysql.createConnection({
   host: '127.0.0.1',
   user: 'root',
-  password: '@SQLpik286#', 
+  password: 'root',
   database: 'campus_parking',
   port: 3306
 });
@@ -28,11 +28,11 @@ app.post('/signup', (req, res) => {
   console.log(req.body)
   const { ID, email, password } = req.body;
 
-  const query = 'INSERT INTO users (ID, email, password) VALUES (?, ?, ?)';
-  db.query(query, [ID, email, password], (err, result) => {
+  const query = 'INSERT INTO users (ID, email, password, userType) VALUES (?, ?, ?)';
+  db.query(query, [ID, email, password, userType], (err, result) => {
     if (err) {
       res.status(500).json({ message: 'Error registering user.', error: err });
-    } 
+    }
     let specificQuery;
     if (userType === 'student') {
       specificQuery = 'INSERT INTO students (SRN) VALUES (?)';
@@ -74,7 +74,7 @@ app.post('/login', (req, res) => {
 app.post('/reserve-spot', (req, res) => {
   const { rowNo, spot_number, role } = req.body;
   console.log('Received request:', { rowNo, spot_number, role });
-  
+
   const checkAvailabilityQuery = `
     SELECT is_available 
     FROM parking 
@@ -114,6 +114,83 @@ app.get('/available-spots', (req, res) => {
       return res.status(500).json({ message: 'Error fetching available spots.', error: err });
     }
     res.status(200).json(results);
+  });
+});
+
+app.get('/user-permits/:userId', (req, res) => {
+  const userId = req.params.userId;
+
+  // Query to fetch permits for the specified user
+  const query = `
+        SELECT pp.permit_id, pp.user_id, pp.issue_date, pp.expiry_date, pp.status, pt.permit_name
+        FROM parking_permit pp
+        JOIN permit_type pt ON pp.permit_id = pt.permit_id
+        WHERE pp.user_id = ? AND pp.status = 'active'
+    `;
+
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error('Error fetching permits:', err);
+      return res.status(500).json({ message: 'Error fetching permits.', error: err });
+    }
+
+    res.status(200).json(results); // Send the permit data back as JSON
+  });
+});
+
+app.post('/issue-permit', (req, res) => {
+  const { permit_id, user_id, status, valid_from, valid_for } = req.body;
+
+  // Get the number of days from valid_for
+  let days = parseInt(valid_for.split(' ')[0]); // Assuming valid_for is like "30 days"
+
+  // Call the stored procedure to calculate expiry date
+  const callQuery = 'CALL CalculateExpiryDate(?, ?, @expiryDate);';
+
+  db.query(callQuery, [valid_from, days], (err) => {
+    if (err) {
+      return res.status(500).json({ message: 'Error calculating expiry date.', error: err });
+    }
+
+    // Now retrieve the expiry date
+    const selectQuery = 'SELECT @expiryDate AS expiryDate;';
+
+    db.query(selectQuery, (err, results) => {
+      if (err) {
+        return res.status(500).json({ message: 'Error retrieving expiry date.', error: err });
+      }
+
+      // Get the expiry date from the results
+      const expiryDate = results[0].expiryDate;
+
+      // Insert the permit with the calculated expiry date
+      const insertQuery = 'INSERT INTO parking_permit (permit_id, user_id, issue_date, expiry_date, status) VALUES (?, ?, NOW(), ?, ?)';
+      db.query(insertQuery, [permit_id, user_id, expiryDate, status], (err, result) => {
+        if (err) {
+          return res.status(500).json({ message: 'Error issuing permit.', error: err });
+        }
+        res.status(201).json({ message: 'Permit issued successfully.' });
+      });
+    });
+  });
+});
+
+
+// Revoke a permit
+app.put('/revoke-permit', (req, res) => {
+  const { permit_id, user_id } = req.body;
+
+  const query = `
+    UPDATE parking_permit
+    SET status = 'revoked'
+    WHERE permit_id = ? AND user_id = ?`;
+
+  db.query(query, [permit_id, user_id], (err, result) => {
+    if (err) {
+      console.error('Error revoking permit:', err);
+      return res.status(500).json({ message: 'Error revoking permit.' });
+    }
+    res.status(200).json({ message: 'Permit revoked successfully.' });
   });
 });
 

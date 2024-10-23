@@ -4,6 +4,7 @@ import LoginPage from "./LoginPage";
 import SignupPage from "./SignupPage";
 import ParkingAvailability from "./ParkingAvailability";
 import PermitStatus from "./PermitStatus";
+import PermitPage from "./Permit";
 import ParkingViolation from "./ParkingViolation";
 import ReserveSpot from "./ReserveSpot";
 
@@ -26,7 +27,7 @@ function App() {
           <h1 className="text-white text-xl font-bold">Campus Parking Management</h1>
           <ul className="flex space-x-4 text-white">
             <li><Link to="/" className="hover:text-197278">Parking Availability</Link></li>
-            <li><Link to="/permit" className="hover:text-197278">Permit Status</Link></li>
+            <li><Link to="/Permit" className="hover:text-197278">Permit Status</Link></li>
             <li><Link to="/violation" className="hover:text-197278">Parking Violations</Link></li>
             <li><Link to="/reservation" className="hover:text-197278">Reserve Spot</Link></li>
           </ul>
@@ -36,7 +37,8 @@ function App() {
           <div className="container mx-auto px-4 py-8">
             <Routes>
               <Route path="/" element={<ParkingAvailability />} />
-              <Route path="/permit" element={<PermitStatus />} />
+              {/*<Route path="/permit" element={<PermitStatus />} />*/}
+              <Route path="/permit" element={<PermitPage />} />
               <Route path="/violation" element={<ParkingViolation />} />
               <Route path="/reservation" element={<ReserveSpot />} />
             </Routes>
