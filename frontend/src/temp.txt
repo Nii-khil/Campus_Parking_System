@@ -1,60 +1,90 @@
-      <Router>
-        <Routes>
-          {/* <Route path="/login" element={<LoginPage />} /> */}
-          <Route
-            path="/login"
-            element={<LoginPage setIsAuthenticated={() => {}} />}
-          />
-          <Route path="/signup" element={<SignupPage />} />
-        </Routes>
-      </Router>
-      <div className="bg-C2DFE3 min-h-screen">
-        {/* Navbar */}
-        <nav className="bg-slate-700 p-4 flex justify-between items-center">
-          <h1 className="text-white text-xl font-bold">
-            Campus Parking Management
-          </h1>
-          <ul className="flex space-x-4 text-white">
-            <li><a href="#availability" className="hover:text-197278">Parking Availability</a></li>
-            <li><a href="#permit" className="hover:text-197278">Permit Status</a></li>
-            <li><a href="#violations" className="hover:text-197278">Parking Violations</a></li>
-            <li><a href="#reservation" className="hover:text-197278">Reserve Spot</a></li>
-          </ul>
-        </nav>
+return (
+    <section id="permit" className="mb-8">
+      <h2 className="text-283D3B text-2xl font-bold mb-4">Parking Availability</h2>
+      <div className="bg-white shadow p-6 rounded-lg">
+        <p className="text-772E25 mb-4">Real-time updates on available parking spots.</p>
 
-        <div className="container mx-auto px-4 py-8">
-          <section id="availability" className="mb-8">
-            <h2 className="text-283D3B text-2xl font-bold mb-4">Parking Availability</h2>
-            <div className="bg-white shadow p-6 rounded-lg">
-              <p className="text-772E25">Real-time updates on available parking spots.</p>
-              {/* status logic */}
+        <div className="grid grid-cols-4 gap-8">
+          {Object.keys(groupedSpots).map((row, index) => (
+            <div key={index} className="bg-gray-100 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold mb-2">Row {row}</h3>
+              <ul className="space-y-1">
+                {groupedSpots[row].map((spot) => (
+                  <li key={spot.spot_number} className="text-gray-700">
+                    Spot {spot.spot_number}
+                  </li>
+                ))}
+              </ul>
             </div>
-          </section>
-
-          <section id="permit" className="mb-8">
-            <h2 className="text-283D3B text-2xl font-bold mb-4">Your Permit Status</h2>
-            <div className="bg-white shadow p-6 rounded-lg">
-              <p className="text-772E25">Details about your current parking permit.</p>
-              {/* permit details component logic */}
-            </div>
-          </section>
-
-          <section id="violation" className="mb-8">
-            <h2 className="text-283D3B text-2xl font-bold mb-4">Your Parking Violations</h2>
-            <div className="bg-white shadow p-6 rounded-lg">
-              <p className="text-772E25">Details about your parking violations.</p>
-              {/* parking violations component logic */}
-            </div>
-          </section>
-
-          <section id="reservation" className="mb-8">
-            <h2 className="text-283D3B text-2xl font-bold mb-4">Reserve a Spot</h2>
-            <div className="bg-white shadow p-6 rounded-lg">
-              <p className="text-772E25">Reserve a parking spot in advance.</p>
-              {/* reservation component logic */}
-            </div>
-          </section>
+          ))}
         </div>
-      </div>
 
-      
+        <div className="mb-4">
+          <p className="text-772E25 mb-4">Use the map below to find a parking spot and enter the details.</p>
+          <img src={map} alt="Parking Lot Map" className="w-1/2 h-90 rounded-lg shadow-md"/>
+        </div>
+
+        <p className="text-772E25 mb-4">Reserve a parking spot in advance. Select a row and enter a spot number.</p>
+
+        {/* Row Selection */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Select Row:</label>
+          <select
+            className="border border-gray-300 p-2 rounded w-full"
+            value={rowNo}
+            onChange={(e) => setRow(e.target.value)}
+          >
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+          </select>
+        </div>
+
+        {/* Spot Number Input */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Enter Spot Number (1-40):</label>
+          <input
+            type="number"
+            min="1"
+            max="40"
+            value={spotNumber}
+            onChange={(e) => setSpotNumber(e.target.value)}
+            className="border border-gray-300 p-2 rounded w-full"
+            placeholder="Enter a number between 1 and 40"
+          />
+        </div>
+
+        {/* Role Selection */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Select Role:</label>
+          <select
+            className="border border-gray-300 p-2 rounded w-full"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+          >
+            <option value="student">Student</option>
+            <option value="staff">Staff</option>
+          </select>
+        </div>
+
+        {/* Reserve Button */}
+        <button
+          onClick={handleReserve}
+          className={`w-full bg-283D3B text-white p-3 rounded ${
+            isLoading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          disabled={isLoading}
+        >
+          {isLoading ? "Reserving..." : "Reserve Spot"}
+        </button>
+
+        {/* Reservation Message */}
+        {message && (
+          <p className="mt-4 text-center text-red-500 font-semibold">
+            {message}
+          </p>
+        )}
+      </div>
+    </section>
+  );

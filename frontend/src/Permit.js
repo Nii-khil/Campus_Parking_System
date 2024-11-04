@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const PermitPage = () => {
     const [userId, setUserId] = useState('');
@@ -110,6 +111,76 @@ const PermitPage = () => {
         }
     };
 
+    const [spots, setSpots] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [rowNo, setRow] = useState("A");
+    const [spotNumber, setSpotNumber] = useState("");
+    const [role, setRole] = useState("student");
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        // Fetch available parking spots from the backend
+        axios
+            .get('http://localhost:3001/available-spots')
+            .then((response) => {
+                setSpots(response.data);
+                setLoading(false);
+            })
+            .catch((err) => {
+                setError('Failed to load parking availability.');
+                setLoading(false);
+            });
+    }, []);
+
+    // Grouping spots by row (A, B, C, D, etc.)
+    const groupedSpots = spots.reduce((acc, spot) => {
+        const { rowNo } = spot;
+        if (!acc[rowNo]) acc[rowNo] = [];
+        acc[rowNo].push(spot);
+        return acc;
+    }, {});
+
+    // Handle reservation logic
+    const handleReserve = async () => {
+        if (!spotNumber || spotNumber < 1 || spotNumber > 40) {
+            setMessage("Please enter a valid spot number between 1 and 40.");
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            const response = await axios.post("http://localhost:3001/reserve-spot", {
+                rowNo,
+                spot_number: parseInt(spotNumber),
+                role,
+            });
+
+            setMessage(response.data.message);
+        } catch (error) {
+            setMessage(error.response?.data.message || "Error reserving spot.");
+        } finally {
+            setIsLoading(false); 
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="text-center py-4">
+                <p className="text-gray-500 animate-pulse">Loading parking availability...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="text-center text-red-500 py-4">
+                <p>{error}</p>
+            </div>
+        );
+    }
+
     return (
         <div className="flex justify-center items-start min-h-screen bg-gray-100 p-4">
             <div className="w-1/2 p-4 bg-white shadow-lg rounded-lg mr-4">
@@ -175,47 +246,85 @@ const PermitPage = () => {
                 <h2 className="text-3xl font-bold text-center mb-8">Parking Permit</h2>
 
                 <div className="mb-4">
+                    <label htmlFor="permit-type" className="block mb-1">Select Permit Type:</label>
                     <select
+                        id="permit-type"
                         value={permitId}
                         onChange={handlePermitTypeChange}
                         className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                        <option value="">Select Permit Type</option>
-                        <option value="1">Daily Pass</option>
-                        <option value="2">Weekly Pass</option>
-                        <option value="3">Semester Pass</option>
-                        <option value="4">Visitor Pass</option>
+                        <option value="">Choose Permit</option>
+                        {Object.entries(permitTypes).map(([key, value]) => (
+                            <option key={key} value={key}>
+                                {value}
+                            </option>
+                        ))}
                     </select>
                 </div>
 
-                <div className="mb-4">
-                    <label className="block text-gray-700 mb-1">Valid From</label>
-                    <input
-                        type="date"
-                        value={validFrom}
-                        readOnly
-                        className="w-full px-3 py-2 border rounded-md bg-gray-200 cursor-not-allowed"
-                    />
-                </div>
-
-                <div className="mb-4">
-                    <label className="block text-gray-700 mb-1">Valid For</label>
-                    <input
-                        type="text"
-                        value={validFor}
-                        readOnly
-                        className="w-full px-3 py-2 border rounded-md bg-gray-200 cursor-not-allowed"
-                    />
-                </div>
+                <p className="text-gray-600">Valid from: {validFrom}</p>
+                <p className="text-gray-600">Valid for: {validFor}</p>
 
                 <button
                     onClick={issuePermit}
-                    className="w-full bg-283D3B text-white py-2 rounded-md hover:bg-283D3B transition duration-200 mb-4"
+                    className="mt-4 w-full bg-283D3B text-white py-2 rounded-md hover:bg-283D3B transition duration-200"
                 >
                     Issue Permit
                 </button>
 
-                {message && <p className="text-center text-red-500 text-sm mt-4">{message}</p>}
+                <h2 className="text-2xl font-bold text-center mt-8 mb-4">Reserve Parking Spot</h2>
+                <div className="mb-4">
+                    <label htmlFor="rowNo" className="block mb-1">Row No:</label>
+                    <input
+                        type="text"
+                        value={rowNo}
+                        onChange={(e) => setRow(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+                <div className="mb-4">
+                    <label htmlFor="spotNumber" className="block mb-1">Spot Number (1-40):</label>
+                    <input
+                        type="number"
+                        value={spotNumber}
+                        onChange={(e) => setSpotNumber(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+                <div className="mb-4">
+                    <label htmlFor="role" className="block mb-1">Role:</label>
+                    <select
+                        id="role"
+                        value={role}
+                        onChange={(e) => setRole(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="student">Student</option>
+                        <option value="staff">Staff</option>
+                    </select>
+                </div>
+                <button
+                    onClick={handleReserve}
+                    className="w-full bg-283D3B text-white py-2 rounded-md hover:bg-283D3B transition duration-200"
+                    disabled={isLoading}
+                >
+                    {isLoading ? 'Reserving...' : 'Reserve Spot'}
+                </button>
+                {message && <p className="mt-4 text-red-500 text-center">{message}</p>}
+
+                <h3 className="text-xl font-bold mt-8">Available Parking Spots</h3>
+                {Object.keys(groupedSpots).map((row) => (
+                    <div key={row}>
+                        <h4 className="font-semibold">Row {row}:</h4>
+                        <div className="grid grid-cols-5 gap-2">
+                            {groupedSpots[row].map((spot) => (
+                                <div key={spot.spot_number} className={`border p-2 rounded-md ${spot.is_reserved ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
+                                    {spot.spot_number} {spot.is_reserved ? '(Reserved)' : ''}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );
