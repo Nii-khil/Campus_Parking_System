@@ -6,6 +6,7 @@ import ParkingAvailability from "./Availability";
 import PermitPage from "./Permit";
 import ParkingViolation from "./ParkingViolation";
 import ReserveSpot from "./ReserveSpot";
+import AdminDashboard from './AdminDashboard';
 
 function App() {
   return (
@@ -13,14 +14,11 @@ function App() {
       <Router>
         <Routes>
           {/* <Route path="/login" element={<LoginPage />} /> */}
-          <Route
-            path="/login"
-            element={<LoginPage setIsAuthenticated={() => {}} />}
-          />
+          <Route path="/login" element={<LoginPage setIsAuthenticated={() => {}} />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/adminDashboard" element={<AdminDashboard />} />
         </Routes>
-      </Router>
-      <Router>
+      
         {/* Navbar */}
         <nav className="bg-slate-700 p-4 flex justify-between items-center">
           <h1 className="text-white text-xl font-bold">Campus Parking Management</h1>

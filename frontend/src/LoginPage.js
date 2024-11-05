@@ -6,6 +6,7 @@ const LoginPage = ({ setIsAuthenticated }) => {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
+  
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
@@ -14,15 +15,20 @@ const LoginPage = ({ setIsAuthenticated }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-
+  
       const data = await response.json();
-
+  
       if (response.status === 200) {
         setMessage('Login successful!');
         localStorage.setItem('isAuthenticated', 'true');
         setIsAuthenticated(true);
-        navigate('/');
-        // Save user data (e.g., in local storage or context)
+  
+        // Check user role and navigate accordingly
+        if (data.user.role === 'admin') {
+          navigate('/adminDashboard'); // Navigate to admin dashboard if role is 'admin'
+        } else {
+          navigate('/'); // Navigate to home page if role is 'student' or 'professor'
+        }
       } else {
         setMessage(data.message);
       }
@@ -30,6 +36,7 @@ const LoginPage = ({ setIsAuthenticated }) => {
       setMessage('An error occurred.');
     }
   };
+  
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
