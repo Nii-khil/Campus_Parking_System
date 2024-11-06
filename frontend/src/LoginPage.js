@@ -23,11 +23,10 @@ const LoginPage = ({ setIsAuthenticated }) => {
         localStorage.setItem('isAuthenticated', 'true');
         setIsAuthenticated(true);
   
-        // Check user role and navigate accordingly
         if (data.user.role === 'admin') {
-          navigate('/adminDashboard'); // Navigate to admin dashboard if role is 'admin'
+          navigate('/adminDashboard');  // if role is admin, navigate to admin dashboard
         } else {
-          navigate('/'); // Navigate to home page if role is 'student' or 'professor'
+          navigate('/');  // if role is student or professor, navigate to common home page
         }
       } else {
         setMessage(data.message);

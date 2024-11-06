@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 const db = mysql.createConnection({
   host: '127.0.0.1',
   user: 'root',
-  password: '@SQLpik286#',
+  password: 'your_password_wink_emoji',
   database: 'campus_parking',
   port: 3306
 });
@@ -24,38 +24,9 @@ db.connect((err) => {
 });
 
 // user Signup Endpoint
-// app.post('/signup', (req, res) => {
-//   console.log(req.body)
-//   const { ID, email, password, userType } = req.body;
-
-//   const query = 'INSERT INTO users (ID, email, password, role) VALUES (?, ?, ?, ?)';
-//   db.query(query, [ID, email, password, userType], (err, result) => {
-//     if (err) {
-//       res.status(500).json({ message: 'Error registering user.', error: err });
-//     }
-//     let specificQuery;
-//     if (userType === 'student') {
-//       specificQuery = 'INSERT INTO student (SRN) VALUES (?)';
-//     } else if (userType === 'staff') {
-//       specificQuery = 'INSERT INTO staff (ID) VALUES (?)';
-//     } else if (userType === 'admin') {
-//       specificQuery = 'INSERT INTO admin (ID) VALUES (?, ?)';
-//     } else {
-//       return res.status(400).json({ message: 'Invalid user type.' });
-//     }
-
-//     // Execute the specific query for either student or staff
-//     db.query(specificQuery, [ID], (err, result) => {
-//       if (err) {
-//         return res.status(500).json({ message: `Error adding ${userType} entry.`, error: err });
-//       }
-//       res.status(201).json({ message: `${userType} registered successfully.` });
-//     });
-//   });
-// });
 
 app.post('/signup', (req, res) => {
-  console.log(req.body);
+  console.log('Received signup request:', req.body);
   const { ID, email, password, userType, firstName, lastName, semester, section, department } = req.body;
 
   // insert into users table
@@ -66,31 +37,57 @@ app.post('/signup', (req, res) => {
     }
 
     let specificQuery;
-    let specificParams = [ID]; // Initial parameter array with ID for user_id reference
+    let specificParams;
 
     // prepare specificQuery and specificParams based on userType
-    // TO BE FIXED
     if (userType === 'student') {
-      specificQuery = 'INSERT INTO student (SRN, first_name, last_name, semester, section, department_name, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)';
-      specificParams = [ID, firstName, lastName, semester, section, department, ID]; // Add user-specific details for student
+      specificQuery = 'INSERT INTO student (SRN, first_name, last_name, semester, section, department_name) VALUES (?, ?, ?, ?, ?, ?)';
+      specificParams = [ID, firstName, lastName, semester, section, department];
 
     } else if (userType === 'staff') {
-      specificQuery = 'INSERT INTO staff (ID, first_name, last_name, department_name, user_id) VALUES (?, ?, ?, ?, ?)';
-      specificParams = [ID, firstName, lastName, department, ID]; // Add user-specific details for staff
+      specificQuery = 'INSERT INTO staff (ID, first_name, last_name, department_name) VALUES (?, ?, ?, ?)';
+      specificParams = [ID, firstName, lastName, department];
 
     } else if (userType === 'admin') {
-      specificQuery = 'INSERT INTO admin (ID, first_name, last_name, user_id) VALUES (?, ?, ?, ?)';
-      specificParams = [ID, firstName, lastName, ID]; // Add user-specific details for admin
+      specificQuery = 'INSERT INTO admin (ID, first_name, last_name) VALUES (?, ?, ?)';
+      specificParams = [ID, firstName, lastName];
 
     } else {
       return res.status(400).json({ message: 'Invalid user type.' });
     }
 
     // insert into the specific table (student, staff, or admin)
-    // TO BE FIXED
     db.query(specificQuery, specificParams, (err, result) => {
+
       if (err) {
-        return res.status(500).json({ message: `Error adding ${userType} entry.`, error: err });
+        console.error('Error in student table insertion:', err); // Log the detailed error
+
+        // Handle specific error cases
+        if (err.code === 'ER_NO_REFERENCED_ROW_2') {
+          return res.status(400).json({ 
+            message: `Invalid department reference. Please ensure the department "${department}" exists.`, 
+            error: err.message 
+          });
+        }
+        if (err.code === 'ER_BAD_NULL_ERROR') {
+          return res.status(400).json({ 
+            message: 'Missing required field', 
+            error: err.message 
+          });
+        }
+        if (err.code === 'ER_DUP_ENTRY') {
+          return res.status(400).json({ 
+            message: 'This ID/SRN is already in use', 
+            error: err.message 
+          });
+        }
+        
+        return res.status(500).json({ 
+          message: `Error adding ${userType} entry.`, 
+          error: err.message,
+          code: err.code,
+          sqlMessage: err.sqlMessage
+        });
       }
       res.status(201).json({ message: `${userType} registered successfully.` });
     });
@@ -239,6 +236,90 @@ app.put('/revoke-permit', (req, res) => {
       return res.status(500).json({ message: 'Error revoking permit.' });
     }
     res.status(200).json({ message: 'Permit revoked successfully.' });
+  });
+});
+
+app.post('/add-violation', (req, res) => {
+  console.log(req.body);
+  const { user_id, type_of_violation, fine_amount } = req.body;
+
+  // Generate a unique violation_id, e.g., by concatenating a timestamp with user_id
+  const timestamp = Date.now().toString().slice(0, 9);
+  const violation_id = `V-${timestamp}-${user_id}`;
+
+  // const violation_id = `V-${Date.now()}-${user_id}`;
+  const fine_paid = false; // default to unpaid
+
+  const query = `
+    INSERT INTO parking_violation (violation_id, user_id, type_of_violation, fine_amount, fine_paid)
+    VALUES (?, ?, ?, ?, ?);
+  `;
+
+  db.query(query, [violation_id, user_id, type_of_violation, fine_amount, fine_paid], (err, result) => {
+    if (err) {
+      console.error('Error adding violation:', err);
+      return res.status(500).json({ message: 'Error adding violation.', error: err });
+    }
+    res.status(201).json({ message: 'Violation added successfully.', violation_id });
+  });
+});
+
+// View violations for a given user ID
+app.get('/view-violations/:userId', (req, res) => {
+  console.log(req.params);
+  const userId = req.params.userId;
+
+  // Construct the SQL query using 'user_id' as the key to fetch violations
+  const selectViolationsQuery = `
+    SELECT violation_id, type_of_violation, fine_amount, fine_paid
+    FROM parking_violation
+    WHERE user_id = ? AND fine_paid = 0;
+  `;
+
+  db.query(selectViolationsQuery, [userId], (err, results) => {
+    if (err) {
+      return res.status(500).json({ message: 'Error fetching violations.', error: err });
+    }
+
+    const formattedResults = results.map(violation => ({
+      violation_id: violation.violation_id,
+      type_of_violation: violation.type_of_violation,
+      fine_amount: violation.fine_amount,
+      fine_paid: violation.fine_paid ? 'YES' : 'NO' // Convert boolean to YES/NO
+    }));
+
+    res.status(200).json(formattedResults);
+  });
+
+});
+
+app.put('/mark-fee-paid/:violationId', async (req, res) => {
+  const violationId = req.params.violationId;
+
+  try {
+    // Assuming you're using an ORM or direct SQL query
+    await ViolationModel.update(
+      { fine_paid: 'YES' }, // Update the fees_paid field to "YES"
+      { where: { id: violationId } } // Specify which record to update
+    );
+
+    res.status(200).json({ message: "Fees marked as paid successfully" });
+  } catch (error) {
+    console.error("Error updating fees_paid:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+app.put("/mark-fees-paid/:violationId", (req, res) => {
+  const violationId = req.params.violationId;
+  const query = `UPDATE parking_violation SET fine_paid = 1 WHERE violation_id = ?`;
+
+  db.query(query, [violationId], (error, results) => {
+    if (error) {
+      console.error("Error updating fees status:", error);
+      return res.status(500).json({ message: "Error updating fees status" });
+    }
+    res.status(200).json({ message: "Fees marked as paid successfully" });
   });
 });
 
