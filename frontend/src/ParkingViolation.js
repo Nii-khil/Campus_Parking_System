@@ -63,6 +63,7 @@ const ParkingViolation = () => {
   const [violations, setViolations] = useState([]);
   const { userID } = useUser(); // Access userID from context
 
+  console.log(userID)
   useEffect(() => {
     const fetchViolations = async () => {
       if (!userID) {
@@ -71,7 +72,7 @@ const ParkingViolation = () => {
       }
 
       try {
-        const response = await axios.get(`http://localhost:3001/api/parking_violations?userID=${userID}`);
+        const response = await axios.get(`http://localhost:3001/parking_violations/${userID}`);
         setViolations(response.data);
       } catch (error) {
         console.error("Error fetching parking violations:", error);

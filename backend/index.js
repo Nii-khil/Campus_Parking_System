@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 const db = mysql.createConnection({
   host: '127.0.0.1',
   user: 'root',
-  password: '@SQLpik286#',
+  password: 'root',
   database: 'campus_parking',
   port: 3306
 });
@@ -64,26 +64,26 @@ app.post('/signup', (req, res) => {
 
         // Handle specific error cases
         if (err.code === 'ER_NO_REFERENCED_ROW_2') {
-          return res.status(400).json({ 
-            message: `Invalid department reference. Please ensure the department "${department}" exists.`, 
-            error: err.message 
+          return res.status(400).json({
+            message: `Invalid department reference. Please ensure the department "${department}" exists.`,
+            error: err.message
           });
         }
         if (err.code === 'ER_BAD_NULL_ERROR') {
-          return res.status(400).json({ 
-            message: 'Missing required field', 
-            error: err.message 
+          return res.status(400).json({
+            message: 'Missing required field',
+            error: err.message
           });
         }
         if (err.code === 'ER_DUP_ENTRY') {
-          return res.status(400).json({ 
-            message: 'This ID/SRN is already in use', 
-            error: err.message 
+          return res.status(400).json({
+            message: 'This ID/SRN is already in use',
+            error: err.message
           });
         }
-        
-        return res.status(500).json({ 
-          message: `Error adding ${userType} entry.`, 
+
+        return res.status(500).json({
+          message: `Error adding ${userType} entry.`,
           error: err.message,
           code: err.code,
           sqlMessage: err.sqlMessage
@@ -96,20 +96,22 @@ app.post('/signup', (req, res) => {
 
 // Backend - login endpoint
 app.post('/login', (req, res) => {
-  const { email, password } = req.body;
+  const { userID, password } = req.body;
+  console.log(req.body)
 
-  const query = 'SELECT * FROM users WHERE email = ? AND password = ?';
-  db.query(query, [email, password], (err, results) => {
+  const query = 'SELECT * FROM users WHERE ID = ? AND password = ?';
+  db.query(query, [userID, password], (err, results) => {
+    console.log(results)
     if (err) {
       res.status(500).json({ message: 'Error logging in.', error: err });
     } else if (results.length > 0) {
       const user = results[0];
       res.status(200).json({
         message: 'Login successful.',
-        user: { id: user.id, email: user.email, role: user.role } // Include user role
+        user: { id: user.ID, email: user.email, role: user.role } // Include user role
       });
     } else {
-      res.status(401).json({ message: 'Invalid email or password.' });
+      res.status(401).json({ message: 'Invalid userID or password.' });
     }
   });
 });
@@ -183,8 +185,9 @@ app.get('/user-permits/:userId', (req, res) => {
   });
 });
 
-app.post('/issue-permit', (req, res) => {
-  const { permit_id, user_id, status, valid_from, valid_for } = req.body;
+app.post('/issue-permit/:userId', (req, res) => {
+  const userId = req.params.userId
+  const { permit_id, status, valid_from, valid_for } = req.body;
 
   // Get the number of days from valid_for
   let days = parseInt(valid_for.split(' ')[0]); // Assuming valid_for is like "30 days"
@@ -210,7 +213,7 @@ app.post('/issue-permit', (req, res) => {
 
       // Insert the permit with the calculated expiry date
       const insertQuery = 'INSERT INTO parking_permit (permit_id, user_id, issue_date, expiry_date, status) VALUES (?, ?, NOW(), ?, ?)';
-      db.query(insertQuery, [permit_id, user_id, expiryDate, status], (err, result) => {
+      db.query(insertQuery, [permit_id, userId, expiryDate, status], (err, result) => {
         if (err) {
           return res.status(500).json({ message: 'Error issuing permit.', error: err });
         }
@@ -323,9 +326,8 @@ app.put("/mark-fees-paid/:violationId", (req, res) => {
   });
 });
 
-app.get('/api/parking_violations', (req, res) => {
-  console.log(req.userID);
-  const userID = req.userID; // Assuming you have user authentication middleware that adds the user ID to `req.user`
+app.get('/parking_violations/:userId', (req, res) => {
+  const userID = req.params.userId; // Assuming you have user authentication middleware that adds the user ID to `req.user`
 
   // SQL query to get violations based on the user ID
   const query = 'SELECT violation_id, type_of_violation, fine_amount, fine_paid FROM parking_violation WHERE user_id = ?';
