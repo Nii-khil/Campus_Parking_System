@@ -3,6 +3,7 @@ import { Link, Route, Routes } from "react-router-dom";
 import ViolationManagement from "./ViolationManagement";
 import ViewHistory from "./ViewHistory";
 import PermitStatus from "./PermitStatus";
+import EntryExitLog from "./EntryExitLog";
 
 function AdminDashboardWelcome() {
   return (
@@ -26,6 +27,7 @@ function AdminDashboard({ handleLogout }) { // receiving handleLogout as a prop
       <nav className="bg-slate-700 p-4 flex justify-between items-center">
         <h1 className="text-white text-xl font-bold">Campus Parking Management</h1>
         <ul className="flex space-x-4 text-white">
+          <li><Link to="/adminDashboard/entryExitLog" className="hover:text-197278">Entry/Exit Management</Link></li>
           <li><Link to="/adminDashboard/vioManage" className="hover:text-197278">Parking Violations</Link></li>
           <li><Link to="/adminDashboard/viewHist" className="hover:text-197278">Parking History</Link></li>
           <li><Link to="/adminDashboard/permitStatus" className="hover:text-197278">Permit Status</Link></li>
@@ -41,6 +43,7 @@ function AdminDashboard({ handleLogout }) { // receiving handleLogout as a prop
             <Route path="vioManage" element={<ViolationManagement />} />
             <Route path="viewHist" element={<ViewHistory />} />
             <Route path="permitStatus" element={<PermitStatus />} />
+            <Route path="entryExitLog" element={<EntryExitLog />} />
           </Routes>
         </div>
       </div>

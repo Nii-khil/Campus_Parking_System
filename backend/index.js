@@ -2,6 +2,8 @@ const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const { v4: uuidv4 } = require('uuid');
+
 
 const app = express();
 app.use(cors());
@@ -94,26 +96,26 @@ app.post('/signup', (req, res) => {
   });
 });
 
-// Backend - login endpoint
 app.post('/login', (req, res) => {
-  const { email, password } = req.body;
+  const { userID, password } = req.body;
+  console.log(req.body)
 
-  const query = 'SELECT * FROM users WHERE email = ? AND password = ?';
-  db.query(query, [email, password], (err, results) => {
+  const query = 'SELECT * FROM users WHERE ID = ? AND password = ?';
+  db.query(query, [userID, password], (err, results) => {
+    console.log(results)
     if (err) {
       res.status(500).json({ message: 'Error logging in.', error: err });
     } else if (results.length > 0) {
       const user = results[0];
       res.status(200).json({
         message: 'Login successful.',
-        user: { id: user.id, email: user.email, role: user.role } // Include user role
+        user: { id: user.ID, email: user.email, role: user.role } // Include user role
       });
     } else {
-      res.status(401).json({ message: 'Invalid email or password.' });
+      res.status(401).json({ message: 'Invalid userID or password.' });
     }
   });
 });
-
 
 // Reserve a parking spot
 app.post('/reserve-spot', (req, res) => {
@@ -183,8 +185,9 @@ app.get('/user-permits/:userId', (req, res) => {
   });
 });
 
-app.post('/issue-permit', (req, res) => {
-  const { permit_id, user_id, status, valid_from, valid_for } = req.body;
+app.post('/issue-permit/:userId', (req, res) => {
+  const userId = req.params.userId
+  const { permit_id, status, valid_from, valid_for } = req.body;
 
   // Get the number of days from valid_for
   let days = parseInt(valid_for.split(' ')[0]); // Assuming valid_for is like "30 days"
@@ -209,7 +212,7 @@ app.post('/issue-permit', (req, res) => {
       const expiryDate = results[0].expiryDate;
 
       // Insert the permit with the calculated expiry date
-      const insertQuery = 'INSERT INTO parking_permit (permit_id, user_id, issue_date, expiry_date, status) VALUES (?, ?, NOW(), ?, ?)';
+      const insertQuery = 'INSERT INTO parking_permit (permit_id, userID, issue_date, expiry_date, status) VALUES (?, ?, NOW(), ?, ?)';
       db.query(insertQuery, [permit_id, user_id, expiryDate, status], (err, result) => {
         if (err) {
           return res.status(500).json({ message: 'Error issuing permit.', error: err });
@@ -323,13 +326,11 @@ app.put("/mark-fees-paid/:violationId", (req, res) => {
   });
 });
 
-app.get('/api/parking_violations', (req, res) => {
-  console.log(req.userID);
-  const userID = req.userID; // Assuming you have user authentication middleware that adds the user ID to `req.user`
-
+app.get('/parking_violations/:userId', (req, res) => {
+  const userID = req.params.userId; // Assuming you have user authentication middleware that adds the user ID to `req.user`
   // SQL query to get violations based on the user ID
+  
   const query = 'SELECT violation_id, type_of_violation, fine_amount, fine_paid FROM parking_violation WHERE user_id = ?';
-
   db.query(query, [userID], (err, results) => {
     if (err) {
       console.error("Error fetching parking violations:", err);
@@ -338,6 +339,65 @@ app.get('/api/parking_violations', (req, res) => {
 
     // Send the violations as JSON
     res.json(results);
+  });
+});
+
+app.get('/api/parkingHistory', (req, res) => {
+  const query = 'SELECT * FROM parking_history';
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching parking history:', err);
+      return res.status(500).json({ message: 'Error retrieving parking history', error: err });
+    }
+
+    res.json(results);
+  });
+});
+
+// Endpoint to create a parking entry
+app.post('/api/parkingHistory/entry', (req, res) => {
+
+  const { user_id, vehicle_type, registration_number, parking_spot } = req.body;
+  const history_id = uuidv4().slice(0, 25); // Generate a unique history_id less than 25 chars
+  const fees_amount = vehicle_type === '4-wheeler' ? 30.0 : 0.0; // Set fees based on vehicle type
+  const entry_time = new Date()
+
+  // SQL query to insert a new entry in parking history
+  const query = `
+    INSERT INTO parking_history (history_id, user_id, vehicle_type, registration_number, parking_spot, entry_time, fees_amount, fees_paid)
+    VALUES (?, ?, ?, ?, ?, ?, ?, false)
+  `;
+
+  db.query(query, [history_id, user_id, vehicle_type, registration_number, parking_spot, entry_time, fees_amount], (err, result) => {
+    if (err) {
+      console.error('Error creating parking entry:', err);
+      return res.status(500).json({ message: 'Failed to create entry', error: err });
+    }
+
+    res.status(201).json({ message: 'Entry created successfully', entry: result });
+  });
+});
+
+// Endpoint to mark exit for a parking entry
+app.put('/api/parkingHistory/:historyId/exit', (req, res) => {
+  const { historyId } = req.params;
+  const exit_time = new Date()
+
+  // SQL query to update exit time and set fees_paid to true
+  const query = `
+    UPDATE parking_history
+    SET exit_time = ?, fees_paid = true
+    WHERE history_id = ?
+  `;
+
+  db.query(query, [exit_time, historyId], (err, result) => {
+    if (err) {
+      console.error('Error marking exit:', err);
+      return res.status(500).json({ message: 'Failed to mark exit', error: err });
+    }
+
+    res.json({ message: 'Exit marked successfully', updatedEntry: result });
   });
 });
 
