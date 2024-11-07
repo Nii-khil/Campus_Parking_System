@@ -19,7 +19,7 @@ function AdminDashboardWelcome() {
   );
 }
 
-function AdminDashboard() {
+function AdminDashboard({ handleLogout }) { // receiving handleLogout as a prop
   return (
     <>
       {/* navbar content */}
@@ -29,6 +29,7 @@ function AdminDashboard() {
           <li><Link to="/adminDashboard/vioManage" className="hover:text-197278">Parking Violations</Link></li>
           <li><Link to="/adminDashboard/viewHist" className="hover:text-197278">Parking History</Link></li>
           <li><Link to="/adminDashboard/permitStatus" className="hover:text-197278">Permit Status</Link></li>
+          <li><button onClick={handleLogout} className="hover:text-197278">Logout</button></li>
         </ul>
       </nav>
 

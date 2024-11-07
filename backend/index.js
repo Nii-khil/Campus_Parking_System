@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 const db = mysql.createConnection({
   host: '127.0.0.1',
   user: 'root',
-  password: 'your_password_wink_emoji',
+  password: '@SQLpik286#',
   database: 'campus_parking',
   port: 3306
 });
@@ -320,6 +320,24 @@ app.put("/mark-fees-paid/:violationId", (req, res) => {
       return res.status(500).json({ message: "Error updating fees status" });
     }
     res.status(200).json({ message: "Fees marked as paid successfully" });
+  });
+});
+
+app.get('/api/parking_violations', (req, res) => {
+  console.log(req.userID);
+  const userID = req.userID; // Assuming you have user authentication middleware that adds the user ID to `req.user`
+
+  // SQL query to get violations based on the user ID
+  const query = 'SELECT violation_id, type_of_violation, fine_amount, fine_paid FROM parking_violation WHERE user_id = ?';
+
+  db.query(query, [userID], (err, results) => {
+    if (err) {
+      console.error("Error fetching parking violations:", err);
+      return res.status(500).json({ message: 'Error retrieving violations', error: err });
+    }
+
+    // Send the violations as JSON
+    res.json(results);
   });
 });
 
