@@ -12,7 +12,7 @@ app.use(bodyParser.json());
 const db = mysql.createConnection({
   host: '127.0.0.1',
   user: 'root',
-  password: '@SQLpik286#',
+  password: 'root',
   database: 'campus_parking',
   port: 3306
 });
@@ -66,26 +66,26 @@ app.post('/signup', (req, res) => {
 
         // Handle specific error cases
         if (err.code === 'ER_NO_REFERENCED_ROW_2') {
-          return res.status(400).json({ 
-            message: `Invalid department reference. Please ensure the department "${department}" exists.`, 
-            error: err.message 
+          return res.status(400).json({
+            message: `Invalid department reference. Please ensure the department "${department}" exists.`,
+            error: err.message
           });
         }
         if (err.code === 'ER_BAD_NULL_ERROR') {
-          return res.status(400).json({ 
-            message: 'Missing required field', 
-            error: err.message 
+          return res.status(400).json({
+            message: 'Missing required field',
+            error: err.message
           });
         }
         if (err.code === 'ER_DUP_ENTRY') {
-          return res.status(400).json({ 
-            message: 'This ID/SRN is already in use', 
-            error: err.message 
+          return res.status(400).json({
+            message: 'This ID/SRN is already in use',
+            error: err.message
           });
         }
-        
-        return res.status(500).json({ 
-          message: `Error adding ${userType} entry.`, 
+
+        return res.status(500).json({
+          message: `Error adding ${userType} entry.`,
           error: err.message,
           code: err.code,
           sqlMessage: err.sqlMessage
@@ -212,8 +212,10 @@ app.post('/issue-permit/:userId', (req, res) => {
       const expiryDate = results[0].expiryDate;
 
       // Insert the permit with the calculated expiry date
+
       const insertQuery = 'INSERT INTO parking_permit (permit_id, userID, issue_date, expiry_date, status) VALUES (?, ?, NOW(), ?, ?)';
       db.query(insertQuery, [permit_id, user_id, expiryDate, status], (err, result) => {
+
         if (err) {
           return res.status(500).json({ message: 'Error issuing permit.', error: err });
         }
@@ -328,6 +330,7 @@ app.put("/mark-fees-paid/:violationId", (req, res) => {
 
 app.get('/parking_violations/:userId', (req, res) => {
   const userID = req.params.userId; // Assuming you have user authentication middleware that adds the user ID to `req.user`
+
   // SQL query to get violations based on the user ID
   
   const query = 'SELECT violation_id, type_of_violation, fine_amount, fine_paid FROM parking_violation WHERE user_id = ?';
