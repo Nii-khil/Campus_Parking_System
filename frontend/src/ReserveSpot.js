@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import axios from "axios";
 import map from "./images/map.png";
+import { useUser } from "./UserContext";
 
 const ReserveSpot = () => {
   const [rowNo, setRow] = useState("A");
   const [spotNumber, setSpotNumber] = useState("");
-  const [role, setRole] = useState("student");
+  // const [role, setRole] = useState("student");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { userID } = useUser();
 
   // Handle reservation logic
   const handleReserve = async () => {
@@ -22,7 +24,7 @@ const ReserveSpot = () => {
       const response = await axios.post("http://localhost:3001/reserve-spot", {
         rowNo,
         spot_number: parseInt(spotNumber),
-        role,
+        userID
       });
 
       setMessage(response.data.message);
@@ -83,7 +85,7 @@ const ReserveSpot = () => {
         </div>
 
         {/* Role Selection */}
-        <div className="mb-4">
+        {/* <div className="mb-4">
           <label className="block text-gray-700 mb-2">Select Role:</label>
           <select
             className="border border-gray-300 p-2 rounded w-full"
@@ -93,7 +95,7 @@ const ReserveSpot = () => {
             <option value="student">Student</option>
             <option value="staff">Staff</option>
           </select>
-        </div>
+        </div> */}
 
         {/* Reserve Button */}
         <button

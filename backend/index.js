@@ -2,11 +2,14 @@ const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const { v4: uuidv4 } = require('uuid');
+
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+// database connection setup
 const db = mysql.createConnection({
   host: '127.0.0.1',
   user: 'root',
@@ -57,33 +60,33 @@ app.post('/signup', (req, res) => {
     }
 
     // insert into the specific table (student, staff, or admin)
-    db.query(specificQuery, specificParams, (err, result) => {
 
+    db.query(specificQuery, specificParams, (err, result) => {
       if (err) {
         console.error('Error in student table insertion:', err); // Log the detailed error
 
         // Handle specific error cases
         if (err.code === 'ER_NO_REFERENCED_ROW_2') {
-          return res.status(400).json({
-            message: `Invalid department reference. Please ensure the department "${department}" exists.`,
-            error: err.message
+          return res.status(400).json({ 
+            message: `Invalid department reference. Please ensure the department "${department}" exists.`, 
+            error: err.message 
           });
         }
         if (err.code === 'ER_BAD_NULL_ERROR') {
-          return res.status(400).json({
-            message: 'Missing required field',
-            error: err.message
+          return res.status(400).json({ 
+            message: 'Missing required field', 
+            error: err.message 
           });
         }
         if (err.code === 'ER_DUP_ENTRY') {
-          return res.status(400).json({
-            message: 'This ID/SRN is already in use',
-            error: err.message
+          return res.status(400).json({ 
+            message: 'This ID/SRN is already in use', 
+            error: err.message 
           });
         }
-
-        return res.status(500).json({
-          message: `Error adding ${userType} entry.`,
+        
+        return res.status(500).json({ 
+          message: `Error adding ${userType} entry.`, 
           error: err.message,
           code: err.code,
           sqlMessage: err.sqlMessage
@@ -116,45 +119,70 @@ app.post('/login', (req, res) => {
   });
 });
 
-
-// Reserve a parking spot
+// reserve a parking spot
 app.post('/reserve-spot', (req, res) => {
-  const { rowNo, spot_number, role } = req.body;
-  console.log('Received request:', { rowNo, spot_number, role });
+  const { rowNo, spot_number, userID } = req.body;
+
+  console.log('Received request:', { rowNo, spot_number, userID });
+
+  const checkUserReservationQuery = `
+    SELECT * 
+    FROM parking 
+    WHERE reserved_by = ?;
+  `;
 
   const checkAvailabilityQuery = `
     SELECT is_available 
     FROM parking 
-    WHERE rowNo = ? AND spot_number = ? AND (for_role IS NULL OR for_role = ?);
+    WHERE rowNo = ? AND spot_number = ?;
   `;
 
-  db.query(checkAvailabilityQuery, [rowNo, spot_number, role], (err, results) => {
+  db.query(checkUserReservationQuery, [userID], (err, results) => {
     if (err) {
-      console.error(err); // This will log the error details in your server console
-      return res.status(500).json({ message: 'Database error.', error: err });
+      console.error(err);
+      return res.status(500).json({ message: 'Database error.' });
     }
 
-    if (results.length === 0 || !results[0].is_available) {
-      return res.status(400).json({ message: 'Spot not available.' });
+    if (results.length > 0) {
+      return res.status(400).json({ message: 'User has already reserved a spot.' });
     }
 
-    const reserveSpotQuery = `
-      UPDATE parking 
-      SET is_available = false, for_role = ? 
+    // Check if the requested spot is available
+    const checkAvailabilityQuery = `
+      SELECT is_available 
+      FROM parking 
       WHERE rowNo = ? AND spot_number = ?;
     `;
 
-    db.query(reserveSpotQuery, [role, rowNo, spot_number], (err, result) => {
+    db.query(checkAvailabilityQuery, [rowNo, spot_number], (err, results) => {
       if (err) {
-        return res.status(500).json({ message: 'Error reserving spot.', error: err });
+        console.error(err);
+        return res.status(500).json({ message: 'Database error.' });
       }
-      res.status(200).json({ message: 'Spot reserved successfully.' });
+
+      if (results.length === 0 || !results[0].is_available) {
+        return res.status(400).json({ message: 'Spot not available.' });
+      }
+
+      // Reserve the spot by updating `is_available` and `reserved_by`
+      const reserveSpotQuery = `
+        UPDATE parking 
+        SET is_available = false, reserved_by = ?
+        WHERE rowNo = ? AND spot_number = ?;
+      `;
+
+      db.query(reserveSpotQuery, [userID, rowNo, spot_number], (err, result) => {
+        if (err) {
+          return res.status(500).json({ message: 'Error reserving spot.' });
+        }
+        res.status(200).json({ message: 'Spot reserved successfully.' });
+      });
     });
   });
 });
 
 app.get('/available-spots', (req, res) => {
-  const query = 'SELECT rowNo, spot_number FROM parking WHERE is_available = true';
+  const query = 'SELECT rowNo, spot_number, is_available FROM parking';
 
   db.query(query, (err, results) => {
     if (err) {
@@ -330,8 +358,8 @@ app.get('/parking_violations/:userId', (req, res) => {
   const userID = req.params.userId; // Assuming you have user authentication middleware that adds the user ID to `req.user`
 
   // SQL query to get violations based on the user ID
-  const query = 'SELECT violation_id, type_of_violation, fine_amount, fine_paid FROM parking_violation WHERE user_id = ?';
 
+  const query = 'SELECT violation_id, type_of_violation, fine_amount, fine_paid FROM parking_violation WHERE user_id = ?';
   db.query(query, [userID], (err, results) => {
     if (err) {
       console.error("Error fetching parking violations:", err);
@@ -340,6 +368,65 @@ app.get('/parking_violations/:userId', (req, res) => {
 
     // Send the violations as JSON
     res.json(results);
+  });
+});
+
+app.get('/api/parkingHistory', (req, res) => {
+  const query = 'SELECT * FROM parking_history';
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching parking history:', err);
+      return res.status(500).json({ message: 'Error retrieving parking history', error: err });
+    }
+
+    res.json(results);
+  });
+});
+
+// Endpoint to create a parking entry
+app.post('/api/parkingHistory/entry', (req, res) => {
+
+  const { user_id, vehicle_type, registration_number, parking_spot } = req.body;
+  const history_id = uuidv4().slice(0, 25); // Generate a unique history_id less than 25 chars
+  const fees_amount = vehicle_type === '4-wheeler' ? 30.0 : 0.0; // Set fees based on vehicle type
+  const entry_time = new Date()
+
+  // SQL query to insert a new entry in parking history
+  const query = `
+    INSERT INTO parking_history (history_id, user_id, vehicle_type, registration_number, parking_spot, entry_time, fees_amount, fees_paid)
+    VALUES (?, ?, ?, ?, ?, ?, ?, false)
+  `;
+
+  db.query(query, [history_id, user_id, vehicle_type, registration_number, parking_spot, entry_time, fees_amount], (err, result) => {
+    if (err) {
+      console.error('Error creating parking entry:', err);
+      return res.status(500).json({ message: 'Failed to create entry', error: err });
+    }
+
+    res.status(201).json({ message: 'Entry created successfully', entry: result });
+  });
+});
+
+// Endpoint to mark exit for a parking entry
+app.put('/api/parkingHistory/:historyId/exit', (req, res) => {
+  const { historyId } = req.params;
+  const exit_time = new Date()
+
+  // SQL query to update exit time and set fees_paid to true
+  const query = `
+    UPDATE parking_history
+    SET exit_time = ?, fees_paid = true
+    WHERE history_id = ?
+  `;
+
+  db.query(query, [exit_time, historyId], (err, result) => {
+    if (err) {
+      console.error('Error marking exit:', err);
+      return res.status(500).json({ message: 'Failed to mark exit', error: err });
+    }
+
+    res.json({ message: 'Exit marked successfully', updatedEntry: result });
   });
 });
 
