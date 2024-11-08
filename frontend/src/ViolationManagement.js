@@ -73,30 +73,30 @@ function ViolationManagement() {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-2xl font-semibold mb-6">Violation Management</h2>
+    <div className="bg-gray-900 p-6 rounded-lg shadow-lg">
+      <h2 className="text-2xl font-semibold mb-6 text-white">Violation Management</h2>
 
       {/* log violations section */}
       <div className="mb-8">
-        <h3 className="text-xl font-semibold mb-4">Log a Violation</h3>
+        <h3 className="text-xl font-semibold mb-4 text-gray-300">Log a Violation</h3>
         <div className="mb-4">
-          <label htmlFor="userId" className="block font-semibold mb-1">User ID</label>
+          <label htmlFor="userId" className="block font-semibold mb-1 text-gray-300">User ID</label>
           <input
             type="text"
             id="userId"
             value={userId}
             onChange={(e) => setUserId(e.target.value)}
-            className="border p-2 w-full rounded-md"
+            className="bg-gray-700 border border-gray-600 p-2 w-full rounded-md text-gray-200"
             placeholder="Enter student/professor ID"
           />
         </div>
         <div className="mb-4">
-          <label htmlFor="violationType" className="block font-semibold mb-1">Violation Type</label>
+          <label htmlFor="violationType" className="block font-semibold mb-1 text-gray-300">Violation Type</label>
           <select
             id="violationType"
             value={violationType}
             onChange={(e) => setViolationType(e.target.value)}
-            className="border p-2 w-full rounded-md"
+            className="bg-gray-700 border border-gray-600 p-2 w-full rounded-md text-gray-200"
           >
             <option value="">Select a violation type</option>
             <option value="Unauthorized Parking">Unauthorized Parking</option>
@@ -104,27 +104,27 @@ function ViolationManagement() {
             <option value="Existing Dues">Existing Dues</option>
           </select>
         </div>
-        <button onClick={logViolation} className="bg-blue-600 text-white px-4 py-2 rounded-md">
+        <button onClick={logViolation} className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-500">
           Log Violation
         </button>
-        {errorMessage && <p className="text-red-500 mt-2">{errorMessage}</p>}
+        {errorMessage && <p className="text-red-400 mt-2">{errorMessage}</p>}
       </div>
 
       {/* view violations section */}
       <div>
-        <h3 className="text-xl font-semibold mb-4">View Violations</h3>
+        <h3 className="text-xl font-semibold mb-4 text-gray-300">View Violations</h3>
         <div className="mb-4">
-          <label htmlFor="viewUserId" className="block font-semibold mb-1">User ID</label>
+          <label htmlFor="viewUserId" className="block font-semibold mb-1 text-gray-300">User ID</label>
           <input
             type="text"
             id="viewUserId"
             value={viewUserId}
             onChange={(e) => setViewUserId(e.target.value)}
-            className="border p-2 w-full rounded-md"
+            className="bg-gray-700 border border-gray-600 p-2 w-full rounded-md text-gray-200"
             placeholder="Enter student/professor ID"
           />
         </div>
-        <button onClick={viewViolations} className="bg-blue-600 text-white px-4 py-2 rounded-md">
+        <button onClick={viewViolations} className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-500">
           View Violations
         </button>
       </div>
@@ -132,30 +132,31 @@ function ViolationManagement() {
       {/* display violations in a table */}
       {viewedViolations.length > 0 && (
         <div className="mt-8">
-          <h3 className="text-xl font-semibold mb-4">Violation History</h3>
-          <table className="table-auto w-full border-collapse">
+          <h3 className="text-xl font-semibold mb-4 text-gray-300">Violation History</h3>
+          <table className="table-auto w-full border-collapse bg-gray-700">
             <thead>
               <tr>
-                <th className="border px-4 py-2 text-left">Violation ID</th>
-                <th className="border px-4 py-2 text-left">Type of Violation</th>
-                <th className="border px-4 py-2 text-left">Fine Amount</th>
-                <th className="border px-4 py-2 text-left">Fees Paid</th>
+                <th className="border border-gray-600 px-4 py-2 text-left text-gray-300">Violation ID</th>
+                <th className="border border-gray-600 px-4 py-2 text-left text-gray-300">Type of Violation</th>
+                <th className="border border-gray-600 px-4 py-2 text-left text-gray-300">Fine Amount</th>
+                <th className="border border-gray-600 px-4 py-2 text-left text-gray-300">Fees Paid</th>
+                <th className="border border-gray-600 px-4 py-2 text-left text-gray-300">Actions</th>
               </tr>
             </thead>
             <tbody>
               {viewedViolations.map((violation, index) => (
-                <tr key={index}>
-                  <td className="border px-4 py-2">{violation.violation_id}</td>
-                  <td className="border px-4 py-2">{violation.type_of_violation}</td>
-                  <td className="border px-4 py-2">{violation.fine_amount}</td>
-                  <td className="border px-4 py-2">
+                <tr key={index} className="hover:bg-gray-600">
+                  <td className="border border-gray-600 px-4 py-2 text-gray-200">{violation.violation_id}</td>
+                  <td className="border border-gray-600 px-4 py-2 text-gray-200">{violation.type_of_violation}</td>
+                  <td className="border border-gray-600 px-4 py-2 text-gray-200">₹{violation.fine_amount}</td>
+                  <td className="border border-gray-600 px-4 py-2 text-gray-200">
                     {violation.fees_paid ? "YES" : "NO"}
                   </td>
-                  <td className="border px-4 py-2">
+                  <td className="border border-gray-600 px-4 py-2">
                     {!violation.fees_paid && (
                       <button
                         onClick={() => markAsPaid(violation.violation_id)}
-                        className="bg-green-500 text-white px-4 py-2 rounded-md"
+                        className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-400"
                       >
                         Mark as Paid
                       </button>

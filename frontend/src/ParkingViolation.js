@@ -6,7 +6,7 @@ const ParkingViolation = () => {
   const [violations, setViolations] = useState([]);
   const { userID } = useUser(); // accessing userID from context
 
-  console.log(userID)
+  console.log(userID);
   useEffect(() => {
     const fetchViolations = async () => {
       if (!userID) {
@@ -27,25 +27,25 @@ const ParkingViolation = () => {
 
   return (
     <section id="violation" className="mb-8">
-      <h2 className="text-283D3B text-2xl font-bold mb-4">Your Parking Violations</h2>
-      <div className="bg-white shadow p-6 rounded-lg">
+      <h2 className="text-white text-2xl font-bold mb-4">Your Parking Violations</h2>
+      <div className="bg-gray-800 shadow-lg p-6 rounded-lg">
         {violations.length > 0 ? (
-          <table className="min-w-full bg-white border">
+          <table className="min-w-full bg-gray-700 border border-gray-600">
             <thead>
               <tr>
-                <th className="px-4 py-2 border">Violation ID</th>
-                <th className="px-4 py-2 border">Type of Violation</th>
-                <th className="px-4 py-2 border">Fine Amount</th>
-                <th className="px-4 py-2 border">Fine Paid</th>
+                <th className="px-4 py-2 border border-gray-600 text-gray-300">Violation ID</th>
+                <th className="px-4 py-2 border border-gray-600 text-gray-300">Type of Violation</th>
+                <th className="px-4 py-2 border border-gray-600 text-gray-300">Fine Amount</th>
+                <th className="px-4 py-2 border border-gray-600 text-gray-300">Fine Paid</th>
               </tr>
             </thead>
             <tbody>
               {violations.map((violation) => (
-                <tr key={violation.violation_id}>
-                  <td className="px-4 py-2 border">{violation.violation_id}</td>
-                  <td className="px-4 py-2 border">{violation.type_of_violation}</td>
-                  <td className="px-4 py-2 border">₹{violation.fine_amount}</td>
-                  <td className="px-4 py-2 border">
+                <tr key={violation.violation_id} className="hover:bg-gray-600">
+                  <td className="px-4 py-2 border border-gray-600 text-gray-200 text-center">{violation.violation_id}</td>
+                  <td className="px-4 py-2 border border-gray-600 text-gray-200 text-center">{violation.type_of_violation}</td>
+                  <td className="px-4 py-2 border border-gray-600 text-gray-200 text-center">₹{violation.fine_amount}</td>
+                  <td className="px-4 py-2 border border-gray-600 text-gray-200 text-center">
                     {violation.fine_paid ? "Yes" : "No"}
                   </td>
                 </tr>
@@ -53,7 +53,7 @@ const ParkingViolation = () => {
             </tbody>
           </table>
         ) : (
-          <p className="text-772E25">No parking violations found.</p>
+          <p className="text-gray-300">No parking violations found.</p>
         )}
       </div>
     </section>
@@ -61,3 +61,6 @@ const ParkingViolation = () => {
 };
 
 export default ParkingViolation;
+
+// ------------------------------------------------------------------------------------------------
+

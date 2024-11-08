@@ -17,34 +17,37 @@ const ViewHistory = () => {
   }, []);
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4">Parking History</h2>
+    <div className="bg-gray-900 p-6 rounded-lg shadow-md">
+      <h2 className="text-2xl font-semibold mb-6 text-white">Parking History</h2>
       <table className="w-full border-collapse">
-        <thead>
-          <tr>
-            <th className="border p-2 text-left">History ID</th>
-            <th className="border p-2 text-left">User ID</th>
-            <th className="border p-2 text-left">Vehicle Type</th>
-            <th className="border p-2 text-left">Registration No.</th>
-            <th className="border p-2 text-left">Parking Spot</th>
-            <th className="border p-2 text-left">Entry Time</th>
-            <th className="border p-2 text-left">Exit Time</th>
-            <th className="border p-2 text-left">Fees</th>
-            <th className="border p-2 text-left">Paid</th>
-          </tr>
-        </thead>
+      <thead>
+        <tr className="bg-gray-700">
+          {/* <th className="border border-gray-600 p-2 text-center text-white">History ID</th> */}
+          <th className="border border-gray-600 p-2 text-center text-white">User ID</th>
+          <th className="border border-gray-600 p-2 text-center text-white">Vehicle Type</th>
+          <th className="border border-gray-600 p-2 text-center text-white">Registration No.</th>
+          <th className="border border-gray-600 p-2 text-center text-white">Parking Spot</th>
+          <th className="border border-gray-600 p-2 text-center text-white">Entry Time</th>
+          <th className="border border-gray-600 p-2 text-center text-white">Exit Time</th>
+          <th className="border border-gray-600 p-2 text-center text-white">Fees</th>
+          <th className="border border-gray-600 p-2 text-center text-white">Paid</th>
+        </tr>
+      </thead>
+
         <tbody>
           {history.map((entry) => (
-            <tr key={entry.history_id}>
-              <td className="border p-2">{entry.history_id}</td>
-              <td className="border p-2">{entry.user_id}</td>
-              <td className="border p-2">{entry.vehicle_type}</td>
-              <td className="border p-2">{entry.registration_number}</td>
-              <td className="border p-2">{entry.parking_spot}</td>
-              <td className="border p-2">{new Date(entry.entry_time).toLocaleString()}</td>
-              <td className="border p-2">{entry.exit_time ? new Date(entry.exit_time).toLocaleString() : 'N/A'}</td>
-              <td className="border p-2">₹{entry.fees_amount}</td>
-              <td className="border p-2">{entry.fees_paid ? 'Yes' : 'No'}</td>
+            <tr key={entry.history_id} className="bg-gray-800 text-gray-200">
+              {/* <td className="border border-gray-600 p-2">{entry.history_id}</td> */}
+              <td className="border border-gray-600 p-2 text-center">{entry.user_id}</td>
+              <td className="border border-gray-600 p-2 text-center">{entry.vehicle_type}</td>
+              <td className="border border-gray-600 p-2 text-center">{entry.registration_number}</td>
+              <td className="border border-gray-600 p-2 text-center">{entry.parking_spot}</td>
+              <td className="border border-gray-600 p-2 text-center">{new Date(entry.entry_time).toLocaleString()}</td>
+              <td className="border border-gray-600 p-2 text-center">
+                {entry.exit_time ? new Date(entry.exit_time).toLocaleString() : 'N/A'}
+              </td>
+              <td className="border border-gray-600 p-2">₹{entry.fees_amount}</td>
+              <td className="border border-gray-600 p-2">{entry.fees_paid ? 'Yes' : 'No'}</td>
             </tr>
           ))}
         </tbody>
