@@ -60,31 +60,31 @@ const LoginPage = ({ setIsAuthenticated }) => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md bg-white shadow-lg rounded-lg p-8">
-        <h2 className="text-3xl font-bold text-center mb-8">Login</h2>
+    <div className="flex justify-center items-center min-h-screen bg-gray-800"> {/* Dark background */}
+      <div className="w-full max-w-md bg-gray-900 shadow-lg rounded-lg p-8">
+        <h2 className="text-3xl font-bold text-center text-white mb-8">Login</h2>
         <form onSubmit={handleLogin}>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="userID">
+            <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="userID">
               User ID
             </label>
             <input
               type="text"
               id="userID"
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md text-white bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter your user ID"
               value={userID}
               onChange={(e) => setUserIDState(e.target.value)} // Update state for user ID
             />
           </div>
           <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
+            <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="password">
               Password
             </label>
             <input
               type="password"
               id="password"
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md text-white bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -98,7 +98,7 @@ const LoginPage = ({ setIsAuthenticated }) => {
               Login
             </button>
           </div>
-          <p className="text-center text-gray-500 text-sm mt-4">
+          <p className="text-center text-gray-400 text-sm mt-4">
             Don't have an account?{" "}
             <Link to="/signup" className="text-blue-500 hover:text-blue-700">
               Sign Up

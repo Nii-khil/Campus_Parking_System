@@ -23,7 +23,7 @@ function EntryExitLog() {
       }
     };
     fetchParkingHistory();
-  }, [parkingHistory]);
+  }, []);
 
   // Handle entry creation
   const handleEntry = async () => {
@@ -40,9 +40,9 @@ function EntryExitLog() {
         fees_amount: feesAmount,
       });
       setParkingHistory((prevHistory) => [...prevHistory, response.data]);
-      setUserId(userId);
-      setRegistrationNumber(registrationNumber);
-      setParkingSpot(parkingSpot);
+      setUserId("");
+      setRegistrationNumber("");
+      setParkingSpot("");
     } catch (error) {
       console.error("Error creating entry", error);
     }
@@ -68,95 +68,107 @@ function EntryExitLog() {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <div className="text-white">Loading...</div>;
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 bg-white rounded shadow-md">
-      <h2 className="text-2xl font-bold mb-6">Parking Entry & Exit Log</h2>
+    <div className="max-w-5xl mx-auto px-6 py-8 bg-gray-900 rounded-lg shadow-lg">
+      <h2 className="text-2xl font-bold mb-8 text-white">Parking Entry & Exit Log</h2>
 
       {/* Entry form */}
-      <div className="mb-6">
-        <label>User ID:</label>
-        <input
-          type="text"
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          className="border px-4 py-2 mb-2 block w-full"
-        />
+      <div className="bg-gray-700 p-6 mb-8 rounded-lg shadow">
+        <h3 className="text-xl font-bold mb-4 text-gray-200">Mark New Entry</h3>
 
-        <label>Vehicle Type:</label>
-        <select
-          value={vehicleType}
-          onChange={(e) => {
-            setVehicleType(e.target.value);
-            setFeesAmount(e.target.value === "2-wheeler" ? 0.0 : 30.0);
-          }}
-          className="border px-4 py-2 mb-2 block w-full"
-        >
-          <option value="2-wheeler">2-wheeler</option>
-          <option value="4-wheeler">4-wheeler</option>
-        </select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block font-medium text-gray-300">User ID:</label>
+            <input
+              type="text"
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              className="border border-gray-600 px-4 py-2 rounded-md w-full bg-gray-800 text-gray-200"
+            />
+          </div>
 
-        <label>Registration Number:</label>
-        <input
-          type="text"
-          value={registrationNumber}
-          onChange={(e) => setRegistrationNumber(e.target.value)}
-          className="border px-4 py-2 mb-2 block w-full"
-        />
+          <div>
+            <label className="block font-medium text-gray-300">Vehicle Type:</label>
+            <select
+              value={vehicleType}
+              onChange={(e) => {
+                setVehicleType(e.target.value);
+                setFeesAmount(e.target.value === "2-wheeler" ? 0.0 : 30.0);
+              }}
+              className="border border-gray-600 px-4 py-2 rounded-md w-full bg-gray-800 text-gray-200"
+            >
+              <option value="2-wheeler">2-wheeler</option>
+              <option value="4-wheeler">4-wheeler</option>
+            </select>
+          </div>
 
-        <label>Parking Spot:</label>
-        <input
-          type="text"
-          value={parkingSpot}
-          onChange={(e) => setParkingSpot(e.target.value)}
-          className="border px-4 py-2 mb-4 block w-full"
-        />
+          <div>
+            <label className="block font-medium text-gray-300">Registration Number:</label>
+            <input
+              type="text"
+              value={registrationNumber}
+              onChange={(e) => setRegistrationNumber(e.target.value)}
+              className="border border-gray-600 px-4 py-2 rounded-md w-full bg-gray-800 text-gray-200"
+            />
+          </div>
+
+          <div>
+            <label className="block font-medium text-gray-300">Parking Spot:</label>
+            <input
+              type="text"
+              value={parkingSpot}
+              onChange={(e) => setParkingSpot(e.target.value)}
+              className="border border-gray-600 px-4 py-2 rounded-md w-full bg-gray-800 text-gray-200"
+            />
+          </div>
+        </div>
 
         <button
           onClick={handleEntry}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+          className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-md"
         >
           Mark Entry
         </button>
       </div>
 
       {/* Display parking history */}
-      <table className="w-full table-auto border-collapse border border-gray-300">
+      <table className="min-w-full bg-gray-800 border border-gray-600 shadow">
         <thead>
-          <tr className="bg-gray-200">
-            <th className="border px-4 py-2">History ID</th>
-            <th className="border px-4 py-2">User ID</th>
-            <th className="border px-4 py-2">Vehicle Type</th>
-            <th className="border px-4 py-2">Registration No.</th>
-            <th className="border px-4 py-2">Parking Spot</th>
-            <th className="border px-4 py-2">Entry Time</th>
-            <th className="border px-4 py-2">Exit Time</th>
-            <th className="border px-4 py-2">Fees</th>
-            <th className="border px-4 py-2">Paid</th>
-            <th className="border px-4 py-2">Actions</th>
+          <tr className="bg-gray-700">
+            <th className="px-4 py-2 border border-gray-600 text-gray-300">User ID</th>
+            <th className="px-4 py-2 border border-gray-600 text-gray-300">Vehicle Type</th>
+            <th className="px-4 py-2 border border-gray-600 text-gray-300">Registration No.</th>
+            <th className="px-4 py-2 border border-gray-600 text-gray-300">Parking Spot</th>
+            <th className="px-4 py-2 border border-gray-600 text-gray-300">Entry Time</th>
+            <th className="px-4 py-2 border border-gray-600 text-gray-300">Exit Time</th>
+            <th className="px-4 py-2 border border-gray-600 text-gray-300">Fees</th>
+            <th className="px-4 py-2 border border-gray-600 text-gray-300">Paid</th>
+            <th className="px-4 py-2 border border-gray-600 text-gray-300">Actions</th>
           </tr>
         </thead>
         <tbody>
           {parkingHistory.map((entry) => (
-            <tr key={entry.history_id} className="hover:bg-gray-100">
-              <td className="border px-4 py-2">{entry.history_id}</td>
-              <td className="border px-4 py-2">{entry.user_id}</td>
-              <td className="border px-4 py-2">{entry.vehicle_type}</td>
-              <td className="border px-4 py-2">{entry.registration_number}</td>
-              <td className="border px-4 py-2">{entry.parking_spot}</td>
-              <td className="border px-4 py-2">{new Date(entry.entry_time).toLocaleString()}</td>
-              <td className="border px-4 py-2">
+            <tr key={entry.history_id} className="hover:bg-gray-600">
+              <td className="px-4 py-2 border border-gray-600 text-gray-200 text-center">{entry.user_id}</td>
+              <td className="px-4 py-2 border border-gray-600 text-gray-200 text-center">{entry.vehicle_type}</td>
+              <td className="px-4 py-2 border border-gray-600 text-gray-200 text-center">{entry.registration_number}</td>
+              <td className="px-4 py-2 border border-gray-600 text-gray-200 text-center">{entry.parking_spot}</td>
+              <td className="px-4 py-2 border border-gray-600 text-gray-200 text-center">
+                {new Date(entry.entry_time).toLocaleString()}
+              </td>
+              <td className="px-4 py-2 border border-gray-600 text-gray-200 text-center">
                 {entry.exit_time ? new Date(entry.exit_time).toLocaleString() : "N/A"}
               </td>
-              <td className="border px-4 py-2">₹{entry.fees_amount}</td>
-              <td className="border px-4 py-2">{entry.fees_paid ? "Yes" : "No"}</td>
-              <td className="border px-4 py-2">
+              <td className="px-4 py-2 border border-gray-600 text-gray-200 text-center">₹{entry.fees_amount}</td>
+              <td className="px-4 py-2 border border-gray-600 text-gray-200 text-center">{entry.fees_paid ? "Yes" : "No"}</td>
+              <td className="px-4 py-2 border border-gray-600 text-gray-200 text-center">
                 {!entry.exit_time && (
                   <button
                     onClick={() => handleExit(entry.history_id)}
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                    className="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-1 rounded-md"
                   >
                     Mark Exit
                   </button>
