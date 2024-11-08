@@ -429,7 +429,7 @@ const PermitPage = () => {
     }, [userID]);
 
     const handleHomeRedirect = () => {
-        window.location.href = 'http://localhost:3000';
+        window.location.href = 'http://localhost:3000/dashboard';
     };
 
     const handlePermitTypeChange = (e) => {

@@ -1,5 +1,5 @@
   import React, { useState } from "react";
-  import { BrowserRouter as Router, Route, Routes, Link, useLocation, useNavigate } from "react-router-dom";
+  import { BrowserRouter as Router, Route, Routes, Link, useLocation, useNavigate, Navigate } from "react-router-dom";
   import LoginPage from "./LoginPage";
   import SignupPage from "./SignupPage";
   import ParkingAvailability from "./Availability";
@@ -8,6 +8,7 @@
   import ReserveSpot from "./ReserveSpot";
   import AdminDashboard from "./AdminDashboard";
   import UserDashboardWelcome from "./UserDashboardWelcome";
+  // import WelcomePage from "./WelcomePage";
   import { UserProvider } from "./UserContext"; // Import UserProvider
   
   function App() {
@@ -42,6 +43,14 @@
           <Route path="/login" element={<LoginPage setIsAuthenticated={setIsAuthenticated} />} />
           <Route path="/signup" element={<SignupPage />} />
   
+          <Route path="/" element={
+            isAuthenticated ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          } />
+
           {/* admin dashboard, includes nested routes */}
           <Route
             path="/adminDashboard/*"
@@ -68,6 +77,17 @@
             </ul>
           </nav>
         )}
+
+        <Routes>
+          {/* protected dashboard route */}
+          <Route path="/dashboard" element={
+            isAuthenticated ? (
+              <UserDashboardWelcome />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          } />
+        </Routes>
   
         {isAuthenticated && !isAdminRoute && (
           <div className="bg-C2DFE3 min-h-screen">

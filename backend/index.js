@@ -9,6 +9,7 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+// database connection setup
 const db = mysql.createConnection({
   host: '127.0.0.1',
   user: 'root',
@@ -57,10 +58,9 @@ app.post('/signup', (req, res) => {
     } else {
       return res.status(400).json({ message: 'Invalid user type.' });
     }
-
     // insert into the specific table (student, staff, or admin)
+    
     db.query(specificQuery, specificParams, (err, result) => {
-
       if (err) {
         console.error('Error in student table insertion:', err); // Log the detailed error
 
@@ -117,44 +117,70 @@ app.post('/login', (req, res) => {
   });
 });
 
-// Reserve a parking spot
+// reserve a parking spot
 app.post('/reserve-spot', (req, res) => {
-  const { rowNo, spot_number, role } = req.body;
-  console.log('Received request:', { rowNo, spot_number, role });
+  const { rowNo, spot_number, userID } = req.body;
+  
+  console.log('Received request:', { rowNo, spot_number, userID });
+
+  const checkUserReservationQuery = `
+    SELECT * 
+    FROM parking 
+    WHERE reserved_by = ?;
+  `;
 
   const checkAvailabilityQuery = `
     SELECT is_available 
     FROM parking 
-    WHERE rowNo = ? AND spot_number = ? AND (for_role IS NULL OR for_role = ?);
+    WHERE rowNo = ? AND spot_number = ?;
   `;
 
-  db.query(checkAvailabilityQuery, [rowNo, spot_number, role], (err, results) => {
+  db.query(checkUserReservationQuery, [userID], (err, results) => {
     if (err) {
-      console.error(err); // This will log the error details in your server console
-      return res.status(500).json({ message: 'Database error.', error: err });
+      console.error(err);
+      return res.status(500).json({ message: 'Database error.' });
     }
 
-    if (results.length === 0 || !results[0].is_available) {
-      return res.status(400).json({ message: 'Spot not available.' });
+    if (results.length > 0) {
+      return res.status(400).json({ message: 'User has already reserved a spot.' });
     }
 
-    const reserveSpotQuery = `
-      UPDATE parking 
-      SET is_available = false, for_role = ? 
+    // Check if the requested spot is available
+    const checkAvailabilityQuery = `
+      SELECT is_available 
+      FROM parking 
       WHERE rowNo = ? AND spot_number = ?;
     `;
 
-    db.query(reserveSpotQuery, [role, rowNo, spot_number], (err, result) => {
-      if (err) {
-        return res.status(500).json({ message: 'Error reserving spot.', error: err });
+    db.query(checkAvailabilityQuery, [rowNo, spot_number], (err, results) => {
+      if (err) { 
+        console.error(err);
+        return res.status(500).json({ message: 'Database error.' });
       }
-      res.status(200).json({ message: 'Spot reserved successfully.' });
+
+      if (results.length === 0 || !results[0].is_available) {
+        return res.status(400).json({ message: 'Spot not available.' });
+      }
+
+      // Reserve the spot by updating `is_available` and `reserved_by`
+      const reserveSpotQuery = `
+        UPDATE parking 
+        SET is_available = false, reserved_by = ?
+        WHERE rowNo = ? AND spot_number = ?;
+      `;
+
+      db.query(reserveSpotQuery, [userID, rowNo, spot_number], (err, result) => {
+        if (err) {
+          return res.status(500).json({ message: 'Error reserving spot.' });
+        }
+        res.status(200).json({ message: 'Spot reserved successfully.' });
+      });
     });
   });
 });
 
 app.get('/available-spots', (req, res) => {
-  const query = 'SELECT rowNo, spot_number FROM parking WHERE is_available = true';
+  const query = 'SELECT rowNo, spot_number, is_available FROM parking';
 
   db.query(query, (err, results) => {
     if (err) {
