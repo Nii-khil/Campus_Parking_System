@@ -1,6 +1,6 @@
-# Campus Parking Reservation System
+# Campus Parking Management System
 
-This project is a web-based **Campus Parking Reservation System** designed to help students, faculty, and staff easily manage parking spot reservations on campus. The system allows users to reserve, update, and cancel parking spots in real-time while ensuring efficient spot availability management.
+This project is a web-based **Campus Parking Management System** designed to help students, faculty, and staff easily manage parking spot reservations on campus. The system allows users to reserve, update, and cancel parking spots in real-time while ensuring efficient spot availability management.
 
 ## Features
 
@@ -12,7 +12,7 @@ This project is a web-based **Campus Parking Reservation System** designed to he
 ## Tech Stack
 
 - **Frontend**: ReactJS, TailwindCSS
-- **Backend**: Node.js, Express, MySQL (with stored procedures)
+- **Backend**: Node.js, Express, MySQL
 - **Database**: MySQL
 
 ## Installation
