@@ -170,7 +170,7 @@ app.get('/user-permits/:userId', (req, res) => {
         SELECT pp.permit_id, pp.user_id, pp.issue_date, pp.expiry_date, pp.status, pt.permit_name
         FROM parking_permit pp
         JOIN permit_type pt ON pp.permit_id = pt.permit_id
-        WHERE pp.user_id = ? AND pp.status = 'active'
+        WHERE pp.user_id = ?
     `;
 
   db.query(query, [userId], (err, results) => {
