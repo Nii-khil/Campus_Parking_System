@@ -293,16 +293,26 @@ app.post('/add-violation', (req, res) => {
   });
 });
 
-// View violations for a given user ID
 app.get('/view-violations/:userId', (req, res) => {
   console.log(req.params);
   const userId = req.params.userId;
 
   // Construct the SQL query using 'user_id' as the key to fetch violations
   const selectViolationsQuery = `
-    SELECT violation_id, type_of_violation, fine_amount, fine_paid
-    FROM parking_violation
-    WHERE user_id = ? AND fine_paid = 0;
+    SELECT 
+      CONCAT(users.first_name, ' ', users.last_name) AS user_name,
+      parking_violation.violation_id,
+      parking_violation.type_of_violation,
+      parking_violation.fine_amount,
+      parking_violation.fine_paid
+    FROM 
+      users
+    JOIN 
+      parking_violation 
+    ON 
+      users.ID = parking_violation.user_id
+    WHERE 
+      users.ID = ? AND parking_violation.fine_paid = 0;
   `;
 
   db.query(selectViolationsQuery, [userId], (err, results) => {
@@ -311,16 +321,20 @@ app.get('/view-violations/:userId', (req, res) => {
     }
 
     const formattedResults = results.map(violation => ({
-      violation_id: violation.violation_id,
+      user_name: violation.user_name,
       type_of_violation: violation.type_of_violation,
       fine_amount: violation.fine_amount,
       fine_paid: violation.fine_paid ? 'YES' : 'NO' // Convert boolean to YES/NO
     }));
 
-    res.status(200).json(formattedResults);
+    // res.status(200).json(formattedResults);
+    res.status(200).json({
+      violation_id: results.map(violation => violation.violation_id),
+      violations: formattedResults
+    });
   });
-
 });
+
 
 app.put('/mark-fee-paid/:violationId', async (req, res) => {
   const violationId = req.params.violationId;
@@ -338,16 +352,30 @@ app.put('/mark-fee-paid/:violationId', async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+ 
+// app.put("/mark-fees-paid/:violationId", (req, res) => {
+//   const violationId = req.params.violationId;
+//   const query = `UPDATE parking_violation SET fine_paid = '1' WHERE violation_id = ?`;
+
+//   db.query(query, [violationId], (error, results) => {
+//     if (error) {
+//       console.error("Error updating fees status:", error);
+//       return res.status(500).json({ message: "Error updating fees status" });
+//     }
+//     res.status(200).json({ message: "Fees marked as paid successfully" });
+//   });
+// });
 
 app.put("/mark-fees-paid/:violationId", (req, res) => {
   const violationId = req.params.violationId;
+  console.log("Received violationId:", violationId); // Add this log
   const query = `UPDATE parking_violation SET fine_paid = 1 WHERE violation_id = ?`;
-
   db.query(query, [violationId], (error, results) => {
     if (error) {
       console.error("Error updating fees status:", error);
       return res.status(500).json({ message: "Error updating fees status" });
     }
+    console.log("Database update result:", results); // Add this log
     res.status(200).json({ message: "Fees marked as paid successfully" });
   });
 });
@@ -368,6 +396,30 @@ app.get('/parking_violations/:userId', (req, res) => {
   });
 });
 
+// Endpoint to fetch aggregate summary data for a user
+app.get('/parking_violations/summary/:userId', (req, res) => {
+  const userID = req.params.userId;
+
+  const summaryQuery = `
+    SELECT 
+      COUNT(*) AS total_violations,
+      SUM(CASE WHEN fine_paid = 1 THEN 1 ELSE 0 END) AS paid_violations,
+      SUM(CASE WHEN fine_paid = 0 THEN 1 ELSE 0 END) AS unpaid_violations,
+      SUM(fine_amount) AS total_fines_collected
+    FROM parking_violation
+    WHERE user_id = ?;
+  `;
+
+  db.query(summaryQuery, [userID, userID], (err, results) => {
+    if (err) {
+      console.error("Error fetching parking violations summary:", err);
+      return res.status(500).json({ message: 'Error retrieving violations summary', error: err });
+    }
+
+    res.json(results[0]);
+  });
+});
+
 app.get('/api/parkingHistory', (req, res) => {
   const query = 'SELECT * FROM parking_history';
 
@@ -382,48 +434,171 @@ app.get('/api/parkingHistory', (req, res) => {
 });
 
 // Endpoint to create a parking entry
+// app.post('/api/parkingHistory/entry', (req, res) => {
+
+//   const { user_id, vehicle_type, registration_number, parking_spot } = req.body;
+//   const history_id = uuidv4().slice(0, 25); // Generate a unique history_id less than 25 chars
+//   const fees_amount = vehicle_type === '4-wheeler' ? 30.0 : 0.0; // Set fees based on vehicle type
+//   const entry_time = new Date()
+
+//   // SQL query to insert a new entry in parking history
+//   const query = `
+//     INSERT INTO parking_history (history_id, user_id, vehicle_type, registration_number, parking_spot, entry_time, fees_amount, fees_paid)
+//     VALUES (?, ?, ?, ?, ?, ?, ?, false)
+//   `;
+
+//   db.query(query, [history_id, user_id, vehicle_type, registration_number, parking_spot, entry_time, fees_amount], (err, result) => {
+//     if (err) {
+//       console.error('Error creating parking entry:', err);
+//       return res.status(500).json({ message: 'Failed to create entry', error: err });
+//     }
+
+//     res.status(201).json({ message: 'Entry created successfully', entry: result });
+//   });
+// });
+
+// In the backend API code
 app.post('/api/parkingHistory/entry', (req, res) => {
+  const { user_id, vehicle_type, registration_number } = req.body;
+  const history_id = uuidv4().slice(0, 25);
+  const fees_amount = vehicle_type === '4-wheeler' ? 30.0 : 0.0;
+  const entry_time = new Date();
 
-  const { user_id, vehicle_type, registration_number, parking_spot } = req.body;
-  const history_id = uuidv4().slice(0, 25); // Generate a unique history_id less than 25 chars
-  const fees_amount = vehicle_type === '4-wheeler' ? 30.0 : 0.0; // Set fees based on vehicle type
-  const entry_time = new Date()
-
-  // SQL query to insert a new entry in parking history
-  const query = `
-    INSERT INTO parking_history (history_id, user_id, vehicle_type, registration_number, parking_spot, entry_time, fees_amount, fees_paid)
-    VALUES (?, ?, ?, ?, ?, ?, ?, false)
+  // Query to get the parking spot assigned to the user
+  const getParkingSpotQuery = `
+    SELECT rowNo, spot_number FROM parking WHERE reserved_by = ? AND is_available = false
   `;
 
-  db.query(query, [history_id, user_id, vehicle_type, registration_number, parking_spot, entry_time, fees_amount], (err, result) => {
+  db.query(getParkingSpotQuery, [user_id], (err, result) => {
     if (err) {
-      console.error('Error creating parking entry:', err);
-      return res.status(500).json({ message: 'Failed to create entry', error: err });
+      console.error('Error retrieving parking spot:', err);
+      return res.status(500).json({ message: 'Failed to retrieve parking spot', error: err });
+    }
+    
+    if (result.length === 0) {
+      return res.status(400).json({ message: 'No assigned parking spot found for this user' });
     }
 
-    res.status(201).json({ message: 'Entry created successfully', entry: result });
+    const rowNo = result[0].rowNo;
+    const spot_number = result[0].spot_number;
+    const parking_spot = `${rowNo}${spot_number}`;
+    // const parking_spot = result[0].spot_number;
+    console.log(parking_spot);
+
+    // Query to insert a new entry in parking_history
+    const createEntryQuery = `
+      INSERT INTO parking_history (history_id, user_id, vehicle_type, registration_number, parking_spot, entry_time, fees_amount, fees_paid)
+      VALUES (?, ?, ?, ?, ?, ?, ?, false)
+    `;
+
+    db.query(createEntryQuery, [history_id, user_id, vehicle_type, registration_number, parking_spot, entry_time, fees_amount], (err, result) => {
+      if (err) {
+        console.error('Error creating parking entry:', err);
+        return res.status(500).json({ message: 'Failed to create entry', error: err });
+      }
+
+      res.status(201).json({ message: 'Entry created successfully', entry: result });
+    });
   });
 });
 
+
 // Endpoint to mark exit for a parking entry
+// app.put('/api/parkingHistory/:historyId/exit', (req, res) => {
+//   const { historyId } = req.params;
+//   const exit_time = new Date()
+
+//   // SQL query to update exit time and set fees_paid to true
+//   const query = `
+//     UPDATE parking_history
+//     SET exit_time = ?, fees_paid = true
+//     WHERE history_id = ?
+//   `;
+
+//   db.query(query, [exit_time, historyId], (err, result) => {
+//     if (err) {
+//       console.error('Error marking exit:', err);
+//       return res.status(500).json({ message: 'Failed to mark exit', error: err });
+//     }
+    
+//     const clearReservationQuery = `
+//       UPDATE parking
+//       SET reserved_by = NULL, is_available = true
+//       WHERE spot_number = ?
+//     `;
+
+//     db.query(clearReservationQuery, [parking_spot], (err, clearResult) => {
+//       if (err) {
+//         console.error('Error clearing reservation:', err);
+//         return res.status(500).json({ message: 'Failed to clear parking reservation', error: err });
+//       }
+
+//       res.json({ message: 'Exit marked successfully and reservation cleared', updatedEntry: updateResult });
+//     });
+//   });
+// });
+
 app.put('/api/parkingHistory/:historyId/exit', (req, res) => {
   const { historyId } = req.params;
-  const exit_time = new Date()
+  const exit_time = new Date();
 
-  // SQL query to update exit time and set fees_paid to true
-  const query = `
-    UPDATE parking_history
-    SET exit_time = ?, fees_paid = true
+  // First, retrieve the user ID and parking spot information related to this history entry
+  const getParkingSpotQuery = `
+    SELECT user_id, parking_spot
+    FROM parking_history
     WHERE history_id = ?
   `;
 
-  db.query(query, [exit_time, historyId], (err, result) => {
+  db.query(getParkingSpotQuery, [historyId], (err, result) => {
     if (err) {
-      console.error('Error marking exit:', err);
+      console.error('Error fetching parking spot info:', err);
       return res.status(500).json({ message: 'Failed to mark exit', error: err });
     }
 
-    res.json({ message: 'Exit marked successfully', updatedEntry: result });
+    if (result.length === 0) {
+      return res.status(404).json({ message: 'No matching entry found for this history ID.' });
+    }
+
+    const { user_id, parking_spot } = result[0];
+    console.log('Retrieved parking_spot:', parking_spot);
+
+    // Update the exit time and fees_paid in the parking_history table
+    const updateExitQuery = `
+      UPDATE parking_history
+      SET exit_time = ?, fees_paid = true
+      WHERE history_id = ?
+    `;
+
+    db.query(updateExitQuery, [exit_time, historyId], (err, updateResult) => {
+      if (err) {
+        console.error('Error updating exit time:', err);
+        return res.status(500).json({ message: 'Failed to mark exit', error: err });
+      }
+
+      // Set reserved_by to NULL in the parking table for the released spot
+      const clearReservationQuery = `
+        UPDATE parking
+        SET reserved_by = NULL, is_available = true
+        WHERE rowNo = ? AND spot_number = ?
+      `;
+
+      console.log('Executing clear reservation query with spot:', parking_spot); // Debug log
+
+      db.query(clearReservationQuery, [parking_spot[0], parking_spot.slice(1)], (err, clearResult) => {
+        if (err) {
+          console.error('Error clearing reservation:', err);
+          return res.status(500).json({ message: 'Failed to clear parking reservation', error: err });
+        }
+
+        console.log('Clear reservation result:', clearResult); // Debug log
+
+        res.json({ 
+          message: 'Exit marked successfully and reservation cleared', 
+          updatedEntry: updateResult,
+          clearedSpot: parking_spot
+        });
+      });
+    });
   });
 });
 

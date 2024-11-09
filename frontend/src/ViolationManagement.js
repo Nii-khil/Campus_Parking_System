@@ -46,7 +46,15 @@ function ViolationManagement() {
     if (viewUserId) {
       try {
         const response = await axios.get(`http://localhost:3001/view-violations/${viewUserId}`);
-        setViewedViolations(response.data); // Set viewedViolations instead of violations
+        const { violation_id, violations } = response.data; // Destructure both properties
+
+        // Combine violation_id with corresponding violation data
+        const violationsWithId = violations.map((violation, index) => ({
+          ...violation,
+          violation_id: violation_id[index],  // Attach the violation_id
+        }));
+
+        setViewedViolations(violationsWithId); // Update state with combined data
         setErrorMessage("");  // Clear any previous error messages
       } catch (error) {
         setErrorMessage("Error fetching violations. Please try again.");
@@ -58,19 +66,35 @@ function ViolationManagement() {
   };
 
   // function to mark fees as paid
+  // const markAsPaid = async (violationId) => {
+  //   try {
+  //     await axios.put(`http://localhost:3001/mark-fees-paid/${violationId}`);
+  //     setViewedViolations(
+  //       viewedViolations.map((violation) =>
+  //         violation.violation_id === violationId ? { ...violation, fees_paid: "YES" } : violation
+  //       )
+  //     );
+  //   } catch (error) {
+  //     console.error("Error marking fees as paid:", error);
+  //     setErrorMessage("Failed to update fees status. Please try again.");
+  //   }
+  // };
+
   const markAsPaid = async (violationId) => {
     try {
+      // Send request to mark the violation as paid on the backend
       await axios.put(`http://localhost:3001/mark-fees-paid/${violationId}`);
-      setViewedViolations(
-        viewedViolations.map((violation) =>
-          violation.violation_id === violationId ? { ...violation, fees_paid: "YES" } : violation
-        )
-      );
+  
+      // Update the frontend: remove the paid violation from the state
+      setViewedViolations(viewedViolations.filter((violation) => violation.violation_id !== violationId));
+  
+      // alert("Violation marked as paid and removed from the history.");
     } catch (error) {
       console.error("Error marking fees as paid:", error);
       setErrorMessage("Failed to update fees status. Please try again.");
     }
   };
+  
 
   return (
     <div className="bg-gray-900 p-6 rounded-lg shadow-lg">
@@ -136,24 +160,24 @@ function ViolationManagement() {
           <table className="table-auto w-full border-collapse bg-gray-700">
             <thead>
               <tr>
-                <th className="border border-gray-600 px-4 py-2 text-left text-gray-300">Violation ID</th>
+                <th className="border border-gray-600 px-4 py-2 text-left text-gray-300">User Name</th>
                 <th className="border border-gray-600 px-4 py-2 text-left text-gray-300">Type of Violation</th>
                 <th className="border border-gray-600 px-4 py-2 text-left text-gray-300">Fine Amount</th>
-                <th className="border border-gray-600 px-4 py-2 text-left text-gray-300">Fees Paid</th>
+                <th className="border border-gray-600 px-4 py-2 text-left text-gray-300">Fine Paid</th>
                 <th className="border border-gray-600 px-4 py-2 text-left text-gray-300">Actions</th>
               </tr>
             </thead>
             <tbody>
               {viewedViolations.map((violation, index) => (
-                <tr key={index} className="hover:bg-gray-600">
-                  <td className="border border-gray-600 px-4 py-2 text-gray-200">{violation.violation_id}</td>
+                <tr key={violation.violation_id} className="hover:bg-gray-600">
+                  <td className="border border-gray-600 px-4 py-2 text-gray-200">{violation.user_name}</td>
                   <td className="border border-gray-600 px-4 py-2 text-gray-200">{violation.type_of_violation}</td>
                   <td className="border border-gray-600 px-4 py-2 text-gray-200">₹{violation.fine_amount}</td>
                   <td className="border border-gray-600 px-4 py-2 text-gray-200">
-                    {violation.fees_paid ? "YES" : "NO"}
+                    {violation.fine_paid === 'YES' ? "YES" : "NO"}
                   </td>
                   <td className="border border-gray-600 px-4 py-2">
-                    {!violation.fees_paid && (
+                    {violation.fine_paid !== 'YES' && (
                       <button
                         onClick={() => markAsPaid(violation.violation_id)}
                         className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-400"

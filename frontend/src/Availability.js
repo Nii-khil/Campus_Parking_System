@@ -57,7 +57,7 @@ const Availability = () => {
   return (
     <section id="availability" className="mb-8">
       <h2 className="text-white text-2xl font-bold mb-4">Parking Availability</h2>
-      <div className="bg-gray-800 shadow-lg p-6 rounded-lg">
+      <div className="bg-gray-900 shadow-lg p-6 rounded-lg">
         <div className="flex justify-between items-center mb-4">
           <p className="text-gray-300">Real-time updates on parking spots.</p>
           <div className="flex gap-4 items-center">
