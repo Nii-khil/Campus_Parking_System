@@ -38,7 +38,7 @@ const ReserveSpot = () => {
     <section id="reservation" className="mb-8">
       <h2 className="text-white text-2xl font-bold mb-4">Reserve a Spot</h2>
 
-      <div className="bg-gray-800 shadow-lg p-6 rounded-lg">
+      <div className="bg-gray-900 shadow-lg p-6 rounded-lg">
         <p className="text-gray-300 mb-4">
           Use the map below to find a parking spot and enter the details.
         </p>

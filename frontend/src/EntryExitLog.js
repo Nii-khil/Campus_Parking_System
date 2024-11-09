@@ -23,11 +23,11 @@ function EntryExitLog() {
       }
     };
     fetchParkingHistory();
-  }, []);
+  }, [parkingHistory]);
 
   // Handle entry creation
   const handleEntry = async () => {
-    if (!userId || !registrationNumber || !parkingSpot) {
+    if (!userId || !registrationNumber) {
       alert("Please fill out all fields.");
       return;
     }
@@ -42,7 +42,7 @@ function EntryExitLog() {
       setParkingHistory((prevHistory) => [...prevHistory, response.data]);
       setUserId("");
       setRegistrationNumber("");
-      setParkingSpot("");
+      // setParkingSpot("");
     } catch (error) {
       console.error("Error creating entry", error);
     }
@@ -115,7 +115,7 @@ function EntryExitLog() {
             />
           </div>
 
-          <div>
+          {/* <div>
             <label className="block font-medium text-gray-300">Parking Spot:</label>
             <input
               type="text"
@@ -123,7 +123,7 @@ function EntryExitLog() {
               onChange={(e) => setParkingSpot(e.target.value)}
               className="border border-gray-600 px-4 py-2 rounded-md w-full bg-gray-800 text-gray-200"
             />
-          </div>
+          </div> */}
         </div>
 
         <button
