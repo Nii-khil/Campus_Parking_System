@@ -15,7 +15,7 @@ import PermitPage from "./Permit";
 import ParkingViolation from "./ParkingViolation";
 import ReserveSpot from "./ReserveSpot";
 import AdminDashboard from "./AdminDashboard";
-import UserDashboardWelcome from "./UserDashboardWelcome";
+// import UserDashboardWelcome from "./UserDashboardWelcome";
 import { UserProvider } from "./UserContext";
 
 function App() {
@@ -30,6 +30,21 @@ function App() {
         />
       </Router>
     </UserProvider>
+  );
+}
+
+function UserDashboardWelcome() {
+  return (
+    <div className="text-center p-8 bg-gray-900 shadow-md">
+      <h2 className="text-3xl font-bold text-white mb-4">Welcome to the Campus Parking Management System</h2>
+      <p className="text-gray-300 mb-4">
+        As a user, you have access to various features that make parking on campus easier and more efficient. 
+        You can view real-time parking availability, check the status of your parking permit, and even reserve a parking spot.
+      </p>
+      <p className="text-gray-400">
+        Use the navigation menu to explore these options and manage your parking needs. 
+      </p>
+    </div>
   );
 }
 
@@ -50,15 +65,7 @@ function AppContent({ isAuthenticated, setIsAuthenticated }) {
         <Route path="/login" element={<LoginPage setIsAuthenticated={setIsAuthenticated} />} />
         <Route path="/signup" element={<SignupPage />} />
 
-        <Route
-          path="/"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/dashboard" replace />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
+        <Route path="/" element={isAuthenticated ? (<Navigate to="/dashboard" replace />) : (<Navigate to="/login" replace />)}
         />
 
         {/* admin dashboard, includes nested routes */}
@@ -78,35 +85,12 @@ function AppContent({ isAuthenticated, setIsAuthenticated }) {
       {isAuthenticated && !isAdminRoute && (
         <nav className="bg-gray-900 p-4 flex justify-between items-center shadow-md">
           <h1 className="text-teal-400 text-2xl font-bold">Campus Parking Management</h1>
-          <ul className="flex space-x-6 text-gray-300">
-            <li>
-              <Link to="/parkingAvailability" className="hover:text-teal-400 transition duration-200">
-                Parking Availability
-              </Link>
-            </li>
-            <li>
-              <Link to="/permit" className="hover:text-teal-400 transition duration-200">
-                Permit Status
-              </Link>
-            </li>
-            <li>
-              <Link to="/violation" className="hover:text-teal-400 transition duration-200">
-                Parking Violations
-              </Link>
-            </li>
-            <li>
-              <Link to="/reservation" className="hover:text-teal-400 transition duration-200">
-                Reserve Spot
-              </Link>
-            </li>
-            <li>
-              <button
-                onClick={handleLogout}
-                className="hover:text-teal-400 transition duration-200"
-              >
-                Logout
-              </button>
-            </li>
+          <ul className="flex space-x-4 text-white">
+            <li><Link to="/parkingAvailability" className="hover:text-teal-400 transition duration-200">Parking Availability</Link></li>
+            <li><Link to="/permit" className="hover:text-teal-400 transition duration-200">Permit Status</Link></li>
+            <li><Link to="/violation" className="hover:text-teal-400 transition duration-200">Parking Violations</Link></li>
+            <li><Link to="/reservation" className="hover:text-teal-400 transition duration-200">Reserve Spot</Link></li>
+            <li><button onClick={handleLogout} className="hover:text-teal-400 transition duration-200">Logout</button></li>
           </ul>
         </nav>
       )}

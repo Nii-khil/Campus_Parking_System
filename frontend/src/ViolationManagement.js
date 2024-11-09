@@ -64,22 +64,7 @@ function ViolationManagement() {
       setErrorMessage("Please enter a valid user ID to view violations.");
     }
   };
-
-  // function to mark fees as paid
-  // const markAsPaid = async (violationId) => {
-  //   try {
-  //     await axios.put(`http://localhost:3001/mark-fees-paid/${violationId}`);
-  //     setViewedViolations(
-  //       viewedViolations.map((violation) =>
-  //         violation.violation_id === violationId ? { ...violation, fees_paid: "YES" } : violation
-  //       )
-  //     );
-  //   } catch (error) {
-  //     console.error("Error marking fees as paid:", error);
-  //     setErrorMessage("Failed to update fees status. Please try again.");
-  //   }
-  // };
-
+  
   const markAsPaid = async (violationId) => {
     try {
       // Send request to mark the violation as paid on the backend
