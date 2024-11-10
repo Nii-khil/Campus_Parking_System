@@ -62,27 +62,6 @@ const PermitPage = () => {
         }
     };
 
-    const revokePermit = async (permitId) => {
-        try {
-            const response = await fetch('http://localhost:3001/revoke-permit', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ permit_id: permitId, user_id: userID })
-            });
-
-            const data = await response.json();
-            if (response.ok) {
-                setMessage(data.message);
-                fetchUserPermits();
-            } else {
-                setMessage('Error revoking permit: ' + data.message);
-            }
-        } catch (error) {
-            console.error('Error revoking permit:', error);
-            setMessage('Error revoking permit.');
-        }
-    };
-
     useEffect(() => {
         if (userID) {
             fetchUserPermits();
@@ -109,10 +88,11 @@ const PermitPage = () => {
     const [spots, setSpots] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [rowNo, setRow] = useState("A");
-    const [spotNumber, setSpotNumber] = useState("");
     const [role, setRole] = useState("student");
     const [isLoading, setIsLoading] = useState(false);
+    const [rowNo, setRow] = useState("A");
+    const [spotNumber, setSpotNumber] = useState("");
+
 
     useEffect(() => {
         axios
@@ -135,6 +115,33 @@ const PermitPage = () => {
     }, {});
 
 
+    //const handleReserve = async () => {
+    //    if (!spotNumber || spotNumber < 1 || spotNumber > 40) {
+    //        setMessage("Please enter a valid spot number between 1 and 40.");
+    //        return;
+    //    }
+    //
+    //    setIsLoading(true);
+    //
+    //    try {
+    //        const response = await axios.post("http://localhost:3001/reserve-spot", {
+    //            rowNo,
+    //            spot_number: parseInt(spotNumber),
+    //            role,
+    //        });
+    //
+    //        setMessage(response.data.message);
+    //
+    //        // After reserving the spot, fetch the updated list of parking spots
+    //        const updatedSpots = await axios.get('http://localhost:3001/available-spots');
+    //        setSpots(updatedSpots.data);
+    //    } catch (error) {
+    //        setMessage(error.response?.data.message || "Error reserving spot.");
+    //    } finally {
+    //        setIsLoading(false);
+    //    }
+    //};
+
     const handleReserve = async () => {
         if (!spotNumber || spotNumber < 1 || spotNumber > 40) {
             setMessage("Please enter a valid spot number between 1 and 40.");
@@ -144,10 +151,11 @@ const PermitPage = () => {
         setIsLoading(true);
 
         try {
+            // Send userID, rowNo, and spot_number to the backend API
             const response = await axios.post("http://localhost:3001/reserve-spot", {
-                rowNo,
-                spot_number: parseInt(spotNumber),
-                role,
+                rowNo,          // Row of the parking spot
+                spot_number: parseInt(spotNumber),  // Spot number to reserve
+                userID,         // The user ID from context
             });
 
             setMessage(response.data.message);
@@ -161,6 +169,7 @@ const PermitPage = () => {
             setIsLoading(false);
         }
     };
+
 
     const handleRequestAction = async () => {
         if (permitId && validFor) {
