@@ -527,15 +527,15 @@ app.post('/signup', (req, res) => {
 app.post('/login', (req, res) => {
   const { userID, password } = req.body;
 
-  const query = 'SELECT * FROM users WHERE ID = ? AND password = ?';
+  const query = 'SELECT validate_login(?, ?) AS user_info';
   db.query(query, [userID, password], (err, results) => {
     if (err) {
       res.status(500).json({ message: 'Error logging in.', error: err });
-    } else if (results.length > 0) {
-      const user = results[0];
+    } else if (results.length > 0 && results[0].user_info) {
+      const user = results[0].user_info;
       res.status(200).json({
         message: 'Login successful.',
-        user: { id: user.ID, email: user.email, role: user.role }
+        user: { id: user.id, email: user.email, role: user.role }
       });
     } else {
       res.status(401).json({ message: 'Invalid userID or password.' });
