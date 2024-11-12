@@ -100,15 +100,16 @@ app.get('/user-permits/:userId', (req, res) => {
         SELECT pp.permit_id, pp.user_id, pp.issue_date, pp.expiry_date, pp.status, pt.permit_name
         FROM parking_permit pp
         JOIN permit_type pt ON pp.permit_id = pt.permit_id
-        WHERE pp.user_id = ? AND pp.status = 'active'
+        WHERE pp.user_id = ?
     `;
 
-  db.query(query, [userId], (err, results) => {
+    db.query(query, [userId], (err, results) => {
+    console.log(results)
     if (err) {
       console.error('Error fetching permits:', err);
       return res.status(500).json({ message: 'Error fetching permits.', error: err });
     }
-
+    
     res.status(200).json(results); // Send the permit data back as JSON
   });
 });
@@ -117,8 +118,9 @@ app.get('/user-permits/:userId', (req, res) => {
 
 app.post('/issue-permit/:userId', (req, res) => {
   const userId = req.params.userId
+  console.log(userId);
   const { permit_id, status, valid_from, valid_for } = req.body;
-
+  
   // Get the number of days from valid_for
   let days = parseInt(valid_for.split(' ')[0]); // Assuming valid_for is like "30 days"
 
@@ -142,9 +144,10 @@ app.post('/issue-permit/:userId', (req, res) => {
       const expiryDate = results[0].expiryDate;
 
       // Insert the permit with the calculated expiry date
-      const insertQuery = 'INSERT INTO parking_permit (permit_id, userID, issue_date, expiry_date, status) VALUES (?, ?, NOW(), ?, ?)';
-      db.query(insertQuery, [permit_id, user_id, expiryDate, status], (err, result) => {
+      const insertQuery = 'INSERT INTO parking_permit (permit_id, user_id, issue_date, expiry_date, status) VALUES (?, ?, NOW(), ?, ?)';
+      db.query(insertQuery, [permit_id, userId, expiryDate, status], (err, result) => {
         if (err) {
+          console.log(err)
           return res.status(500).json({ message: 'Error issuing permit.', error: err });
         }
         res.status(201).json({ message: 'Permit issued successfully.' });
@@ -169,6 +172,81 @@ app.put('/revoke-permit', (req, res) => {
       return res.status(500).json({ message: 'Error revoking permit.' });
     }
     res.status(200).json({ message: 'Permit revoked successfully.' });
+  });
+});
+
+// Renew a permit
+
+app.put('/renew-permit/:userId', (req, res) => {
+  const { permit_id, user_id } = req.body;
+  console.log(req.body)
+  
+  // Determine the number of days based on the permit_id
+  let days;
+  switch (permit_id) {
+    case 1: // Daily
+      days = 1;
+      break;
+
+    case 2: // Weekly
+      days = 7;
+      break;
+
+    case 3: // Semester
+      days = 180;
+      break;
+
+    case 4: // Visitor
+      days = 1;
+      break;
+
+    default:
+      return res.status(400).json({ message: 'Invalid permit ID' });
+
+  }
+
+  // Call the stored procedure to calculate expiry date based on permit_id
+
+  const callQuery = 'CALL CalculateExpiryDate(?, ?, @expiryDate);';
+  const validFrom = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+  db.query(callQuery, [validFrom, days], (err) => {  // Use current date for 'valid_from'
+    if (err) {
+      console.log(err)
+      return res.status(500).json({ message: 'Error calculating expiry date.', error: err });
+    }
+
+    // Now retrieve the expiry date
+    const selectQuery = 'SELECT @expiryDate AS expiryDate;';
+
+    db.query(selectQuery, (err, results) => {
+      if (err) {
+        return res.status(500).json({ message: 'Error retrieving expiry date.', error: err });
+      }
+      // Get the expiry date from the results
+      const expiryDate = results[0].expiryDate;
+
+      // Update the permit status and expiry date
+      const updateQuery = `
+        UPDATE parking_permit
+        SET status = 'active', expiry_date = ?
+        WHERE permit_id = ? AND user_id = ? AND status = 'expired'`;
+
+      db.query(updateQuery, [expiryDate, permit_id, user_id], (err, result) => {
+        if (err) {
+          console.error('Error renewing permit:', err);
+          return res.status(500).json({ message: 'Error renewing permit.' });
+        }
+
+        // If no rows were affected, the permit might not have been expired or doesn't exist
+        if (result.affectedRows === 0) {
+          return res.status(400).json({ message: 'Permit could not be renewed. Ensure it is expired and exists.' });
+        }
+
+        // Successfully renewed the permit
+        res.status(200).json({ message: 'Permit renewed successfully.', expiryDate });
+      });
+    });
   });
 });
 
