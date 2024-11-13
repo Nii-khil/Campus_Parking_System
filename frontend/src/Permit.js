@@ -114,34 +114,6 @@ const PermitPage = () => {
         return acc;
     }, {});
 
-
-    //const handleReserve = async () => {
-    //    if (!spotNumber || spotNumber < 1 || spotNumber > 40) {
-    //        setMessage("Please enter a valid spot number between 1 and 40.");
-    //        return;
-    //    }
-    //
-    //    setIsLoading(true);
-    //
-    //    try {
-    //        const response = await axios.post("http://localhost:3001/reserve-spot", {
-    //            rowNo,
-    //            spot_number: parseInt(spotNumber),
-    //            role,
-    //        });
-    //
-    //        setMessage(response.data.message);
-    //
-    //        // After reserving the spot, fetch the updated list of parking spots
-    //        const updatedSpots = await axios.get('http://localhost:3001/available-spots');
-    //        setSpots(updatedSpots.data);
-    //    } catch (error) {
-    //        setMessage(error.response?.data.message || "Error reserving spot.");
-    //    } finally {
-    //        setIsLoading(false);
-    //    }
-    //};
-
     const handleReserve = async () => {
         if (!spotNumber || spotNumber < 1 || spotNumber > 40) {
             setMessage("Please enter a valid spot number between 1 and 40.");
@@ -173,11 +145,10 @@ const PermitPage = () => {
 
     const handleRequestAction = async () => {
         if (permitId && validFor) {
-            // Issue permit if permit type is selected
-            issuePermit();
+            handleReserve();
             if (spotNumber && spotNumber >= 1 && spotNumber <= 40) {
                 // Reserve spot if a spot number is entered
-                handleReserve();
+                issuePermit();
             }
         } else {
             setMessage('Please select a permit type or enter a valid spot number.');
