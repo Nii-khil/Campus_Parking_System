@@ -114,16 +114,6 @@ function EntryExitLog() {
               className="border border-gray-600 px-4 py-2 rounded-md w-full bg-gray-800 text-gray-200"
             />
           </div>
-
-          {/* <div>
-            <label className="block font-medium text-gray-300">Parking Spot:</label>
-            <input
-              type="text"
-              value={parkingSpot}
-              onChange={(e) => setParkingSpot(e.target.value)}
-              className="border border-gray-600 px-4 py-2 rounded-md w-full bg-gray-800 text-gray-200"
-            />
-          </div> */}
         </div>
 
         <button

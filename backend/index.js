@@ -95,36 +95,34 @@ app.get('/available-spots', (req, res) => {
 app.get('/user-permits/:userId', (req, res) => {
   const userId = req.params.userId;
 
-  // Query to fetch permits for the specified user
   const query = `
-        SELECT pp.permit_id, pp.user_id, pp.issue_date, pp.expiry_date, pp.status, pt.permit_name
-        FROM parking_permit pp
-        JOIN permit_type pt ON pp.permit_id = pt.permit_id
-        WHERE pp.user_id = ?
-    `;
+    SELECT pp.permit_id, pp.user_id, pp.issue_date, pp.expiry_date, pp.status, pt.permit_name, 
+           CONCAT(parking.rowNo, parking.spot_number) AS parking_spot, u.role
+    FROM parking_permit pp
+    JOIN permit_type pt ON pp.permit_id = pt.permit_id
+    LEFT JOIN parking ON pp.user_id = parking.reserved_by
+    JOIN users u ON u.ID = pp.user_id
+    WHERE pp.user_id = ?
+  `;
 
-    db.query(query, [userId], (err, results) => {
-    console.log(results)
+  db.query(query, [userId], (err, results) => {
     if (err) {
       console.error('Error fetching permits:', err);
       return res.status(500).json({ message: 'Error fetching permits.', error: err });
     }
-    
+
     res.status(200).json(results); // Send the permit data back as JSON
   });
 });
 
-// Issue Permit
+// Issue Permit Endpoint
 
 app.post('/issue-permit/:userId', (req, res) => {
   const userId = req.params.userId
-  console.log(userId);
-  const { permit_id, status, valid_from, valid_for } = req.body;
-  
-  // Get the number of days from valid_for
-  let days = parseInt(valid_for.split(' ')[0]); // Assuming valid_for is like "30 days"
+  const { permit_id, status, valid_from, valid_for, parkingSpot } = req.body;
 
-  // Call the stored procedure to calculate expiry date
+  let days = parseInt(valid_for.split(' ')[0]);
+
   const callQuery = 'CALL CalculateExpiryDate(?, ?, @expiryDate);';
 
   db.query(callQuery, [valid_from, days], (err) => {
@@ -132,7 +130,6 @@ app.post('/issue-permit/:userId', (req, res) => {
       return res.status(500).json({ message: 'Error calculating expiry date.', error: err });
     }
 
-    // Now retrieve the expiry date
     const selectQuery = 'SELECT @expiryDate AS expiryDate;';
 
     db.query(selectQuery, (err, results) => {
@@ -140,14 +137,11 @@ app.post('/issue-permit/:userId', (req, res) => {
         return res.status(500).json({ message: 'Error retrieving expiry date.', error: err });
       }
 
-      // Get the expiry date from the results
       const expiryDate = results[0].expiryDate;
 
-      // Insert the permit with the calculated expiry date
-      const insertQuery = 'INSERT INTO parking_permit (permit_id, user_id, issue_date, expiry_date, status) VALUES (?, ?, NOW(), ?, ?)';
-      db.query(insertQuery, [permit_id, userId, expiryDate, status], (err, result) => {
+      const insertQuery = 'INSERT INTO parking_permit (permit_id, user_id, issue_date, expiry_date, status, parking_spot) VALUES (?, ?, NOW(), ?, ?, ?)';
+      db.query(insertQuery, [permit_id, userId, expiryDate, status, parkingSpot], (err, result) => {
         if (err) {
-          console.log(err)
           return res.status(500).json({ message: 'Error issuing permit.', error: err });
         }
         res.status(201).json({ message: 'Permit issued successfully.' });
@@ -174,29 +168,27 @@ app.put('/revoke-permit', (req, res) => {
     res.status(200).json({ message: 'Permit revoked successfully.' });
   });
 });
-
 // Renew a permit
 
 app.put('/renew-permit/:userId', (req, res) => {
   const { permit_id, user_id } = req.body;
   console.log(req.body)
   
-  // Determine the number of days based on the permit_id
   let days;
   switch (permit_id) {
-    case 1: // Daily
+    case 1:
       days = 1;
       break;
 
-    case 2: // Weekly
+    case 2:
       days = 7;
       break;
 
-    case 3: // Semester
+    case 3:
       days = 180;
       break;
 
-    case 4: // Visitor
+    case 4:
       days = 1;
       break;
 
@@ -205,28 +197,24 @@ app.put('/renew-permit/:userId', (req, res) => {
 
   }
 
-  // Call the stored procedure to calculate expiry date based on permit_id
-
   const callQuery = 'CALL CalculateExpiryDate(?, ?, @expiryDate);';
   const validFrom = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-  db.query(callQuery, [validFrom, days], (err) => {  // Use current date for 'valid_from'
+  db.query(callQuery, [validFrom, days], (err) => {
     if (err) {
       console.log(err)
       return res.status(500).json({ message: 'Error calculating expiry date.', error: err });
     }
 
-    // Now retrieve the expiry date
     const selectQuery = 'SELECT @expiryDate AS expiryDate;';
 
     db.query(selectQuery, (err, results) => {
       if (err) {
         return res.status(500).json({ message: 'Error retrieving expiry date.', error: err });
       }
-      // Get the expiry date from the results
+
       const expiryDate = results[0].expiryDate;
 
-      // Update the permit status and expiry date
       const updateQuery = `
         UPDATE parking_permit
         SET status = 'active', expiry_date = ?
@@ -238,12 +226,10 @@ app.put('/renew-permit/:userId', (req, res) => {
           return res.status(500).json({ message: 'Error renewing permit.' });
         }
 
-        // If no rows were affected, the permit might not have been expired or doesn't exist
         if (result.affectedRows === 0) {
           return res.status(400).json({ message: 'Permit could not be renewed. Ensure it is expired and exists.' });
         }
 
-        // Successfully renewed the permit
         res.status(200).json({ message: 'Permit renewed successfully.', expiryDate });
       });
     });
@@ -256,7 +242,7 @@ app.post('/add-violation', (req, res) => {
   console.log(req.body);
   const { user_id, type_of_violation, fine_amount } = req.body;
   const timestamp = Date.now().toString().slice(0, 9);
-  const violation_id = `V-${timestamp}-${user_id}`; // generating a unique violation_id by concatenating a timestamp with user_id
+  const violation_id = `V-${timestamp}-${user_id}`;
   const fine_paid = false;
 
   const query = `
@@ -304,7 +290,7 @@ app.get('/view-violations/:userId', (req, res) => {
       user_name: violation.user_name,
       type_of_violation: violation.type_of_violation,
       fine_amount: violation.fine_amount,
-      fine_paid: violation.fine_paid ? 'YES' : 'NO' // converting boolean to YES/NO
+      fine_paid: violation.fine_paid ? 'YES' : 'NO'
     }));
 
     res.status(200).json({
@@ -358,7 +344,7 @@ app.get('/parking_violations/summary/:userId', (req, res) => {
       console.error("Error fetching parking violations summary:", err);
       return res.status(500).json({ message: 'Error retrieving violations summary', error: err });
     }
-    res.json(results[0][0]);  // since stored procedures in MySQL return an array of arrays, use results[0][0]
+    res.json(results[0][0]);
   });
 });
 
@@ -385,7 +371,6 @@ app.post('/api/parkingHistory/entry', (req, res) => {
   const fees_amount = vehicle_type === '4-wheeler' ? 30.0 : 0.0;
   const entry_time = new Date();
 
-  // query to get the parking spot assigned to the user
   const getParkingSpotQuery = `
     SELECT rowNo, spot_number FROM parking WHERE reserved_by = ? AND is_available = false
   `;
@@ -403,9 +388,6 @@ app.post('/api/parkingHistory/entry', (req, res) => {
     const rowNo = result[0].rowNo;
     const spot_number = result[0].spot_number;
     const parking_spot = `${rowNo}${spot_number}`;
-    // const parking_spot = result[0].spot_number;
-
-    // Query to insert a new entry in parking_history
     const createEntryQuery = `
       INSERT INTO parking_history (history_id, user_id, vehicle_type, registration_number, parking_spot, entry_time, fees_amount, fees_paid)
       VALUES (?, ?, ?, ?, ?, ?, ?, false)
@@ -427,8 +409,6 @@ app.post('/api/parkingHistory/entry', (req, res) => {
 app.put('/api/parkingHistory/:historyId/exit', (req, res) => {
   const { historyId } = req.params;
   const exit_time = new Date();
-
-  // First, retrieve the user ID and parking spot information related to this history entry
   const getParkingSpotQuery = `
     SELECT user_id, parking_spot
     FROM parking_history
@@ -445,9 +425,6 @@ app.put('/api/parkingHistory/:historyId/exit', (req, res) => {
       return res.status(404).json({ message: 'No matching entry found for this history ID.' });
     }
 
-    const { user_id, parking_spot } = result[0];
-
-    // Update the exit time and fees_paid in the parking_history table
     const updateExitQuery = `
       UPDATE parking_history
       SET exit_time = ?, fees_paid = true
@@ -459,25 +436,9 @@ app.put('/api/parkingHistory/:historyId/exit', (req, res) => {
         console.error('Error updating exit time:', err);
         return res.status(500).json({ message: 'Failed to mark exit', error: err });
       }
-
-      // Set reserved_by to NULL in the parking table for the released spot
-      const clearReservationQuery = `
-        UPDATE parking
-        SET reserved_by = NULL, is_available = true
-        WHERE rowNo = ? AND spot_number = ?
-      `;
-
-      db.query(clearReservationQuery, [parking_spot[0], parking_spot.slice(1)], (err, clearResult) => {
-        if (err) {
-          console.error('Error clearing reservation:', err);
-          return res.status(500).json({ message: 'Failed to clear parking reservation', error: err });
-        }
-
-        res.json({ 
-          message: 'Exit marked successfully and reservation cleared', 
-          updatedEntry: updateResult,
-          clearedSpot: parking_spot
-        });
+      res.json({ 
+        message: 'Exit marked successfully and reservation cleared by trigger', 
+        updatedEntry: updateResult
       });
     });
   });

@@ -3,64 +3,45 @@ import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "./UserContext";
 
 const LoginPage = ({ setIsAuthenticated }) => {
-  const [userID, setUserIDState] = useState(''); // Change from email to userID
+  const [userID, setUserIDState] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
-  const { setUserID: setUserIDContext } = useUser(); // Update context setter
-
-  // Log initial state
-  console.log('LoginPage rendered, current userID:', userID);
+  const { setUserID: setUserIDContext } = useUser();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    console.log('Login attempt with userID:', userID);
 
     try {
       const response = await fetch('http://localhost:3001/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userID, password }) // Send userID instead of email
+        body: JSON.stringify({ userID, password })
       });
 
       const data = await response.json();
-      console.log('Server response:', data);
 
       if (response.status === 200) {
-        // Log the user data received
-        console.log('Login successful, user data:', data.user);
-
-        // Set the userID in context
         setUserIDContext(data.user.id);
-
-        // Verify context update
-        console.log('UserID set in context:', data.user.id);
-
         setMessage('Login successful!');
         localStorage.setItem('isAuthenticated', 'true');
         setIsAuthenticated(true);
 
-        // Log navigation
-        console.log('User role:', data.user.role);
         if (data.user.role === 'admin') {
-          console.log('Navigating to admin dashboard');
           navigate('/adminDashboard');
         } else {
-          console.log('Navigating to home page');
           navigate('/');
         }
       } else {
-        console.log('Login failed:', data.message);
         setMessage(data.message);
       }
     } catch (error) {
-      console.error('Login error:', error);
       setMessage('An error occurred.');
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-800"> {/* Dark background */}
+    <div className="flex justify-center items-center min-h-screen bg-gray-800">
       <div className="w-full max-w-md bg-gray-900 shadow-lg rounded-lg p-8">
         <h2 className="text-3xl font-bold text-center text-white mb-8">Login</h2>
         <form onSubmit={handleLogin}>
@@ -74,7 +55,7 @@ const LoginPage = ({ setIsAuthenticated }) => {
               className="w-full px-3 py-2 border rounded-md text-white bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter your user ID"
               value={userID}
-              onChange={(e) => setUserIDState(e.target.value)} // Update state for user ID
+              onChange={(e) => setUserIDState(e.target.value)}
             />
           </div>
           <div className="mb-6">

@@ -10,12 +10,12 @@ const PermitPage = () => {
     const [message, setMessage] = useState('');
     const [validFrom] = useState(new Date().toISOString().split('T')[0]);
     const [validFor, setValidFor] = useState('');
+    const [role, setRole] = useState(''); // Role state, initially empty
 
     const permitTypes = {
         '1': 'Daily Pass',
         '2': 'Weekly Pass',
         '3': 'Semester Pass',
-        '4': 'Visitor Pass'
     };
 
     const fetchUserPermits = async () => {
@@ -25,6 +25,9 @@ const PermitPage = () => {
             const data = await response.json();
             if (response.ok) {
                 setPermits(data);
+                if (data.length > 0) {
+                    setRole(data[0].role); // Set the role from the first permit
+                }
             } else {
                 setMessage('Error fetching permits: ' + data.message);
             }
@@ -33,7 +36,6 @@ const PermitPage = () => {
             setMessage('Error fetching permits.');
         }
     };
-
     const issuePermit = async () => {
         if (!permitId || !validFor) {
             setMessage('Please select a permit type and validity period.');
@@ -88,11 +90,10 @@ const PermitPage = () => {
     const [spots, setSpots] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [role, setRole] = useState("student");
+    //const [role, setRole] = useState("student");
     const [isLoading, setIsLoading] = useState(false);
     const [rowNo, setRow] = useState("A");
     const [spotNumber, setSpotNumber] = useState("");
-
 
     useEffect(() => {
         axios
@@ -114,10 +115,11 @@ const PermitPage = () => {
         return acc;
     }, {});
 
+    // Handle reservation logic
     const handleReserve = async () => {
         if (!spotNumber || spotNumber < 1 || spotNumber > 40) {
             setMessage("Please enter a valid spot number between 1 and 40.");
-            return;
+            return false; // Return false to indicate failure
         }
 
         setIsLoading(true);
@@ -135,20 +137,25 @@ const PermitPage = () => {
             // After reserving the spot, fetch the updated list of parking spots
             const updatedSpots = await axios.get('http://localhost:3001/available-spots');
             setSpots(updatedSpots.data);
+            return true; // Return true to indicate success
         } catch (error) {
             setMessage(error.response?.data.message || "Error reserving spot.");
+            return false; // Return false to indicate failure
         } finally {
             setIsLoading(false);
         }
     };
 
-
     const handleRequestAction = async () => {
         if (permitId && validFor) {
-            handleReserve();
-            if (spotNumber && spotNumber >= 1 && spotNumber <= 40) {
-                // Reserve spot if a spot number is entered
+            // First, try to reserve the parking spot
+            const reserveSuccess = await handleReserve();
+
+            if (reserveSuccess) {
+                // If reservation was successful, issue the permit
                 issuePermit();
+            } else {
+                setMessage('Failed to reserve the parking spot.');
             }
         } else {
             setMessage('Please select a permit type or enter a valid spot number.');
@@ -185,7 +192,6 @@ const PermitPage = () => {
     return (
         <section id='permit' className='mb-8'>
             <div className="bg-gray-800 shadow-lg p-6 rounded-lg">
-                {/* Top Section: My Permits and Parking Permit/Spot Reservation side by side */}
                 <div className="flex w-full max-w-6xl space-x-8 mb-8">
                     {/* My Permits Section */}
                     <div className="w-2/3 p-4 bg-gray-700 shadow-lg rounded-lg">
@@ -199,6 +205,7 @@ const PermitPage = () => {
                                         <th className="px-4 py-2 text-left">Permit Type</th>
                                         <th className="px-4 py-2 text-left">Status</th>
                                         <th className="px-4 py-2 text-left">Expiry Date</th>
+                                        {/* <th className="px-4 py-2 text-left">Parking Spot</th> */}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -207,6 +214,7 @@ const PermitPage = () => {
                                             <td className="px-4 py-2">{permitTypes[permit.permit_id]}</td>
                                             <td className="px-4 py-2">{permit.status}</td>
                                             <td className="px-4 py-2">{new Date(permit.expiry_date).toLocaleDateString()}</td>
+                                            {/* Display parking spot <td className="px-4 py-2">{permit.parking_spot || 'N/A'}</td> {/* Display parking spot */}
                                         </tr>
                                     ))}
                                 </tbody>
@@ -260,15 +268,12 @@ const PermitPage = () => {
                         </div>
                         <div className="mb-4">
                             <label htmlFor="role" className="block mb-1">Role:</label>
-                            <select
-                                id="role"
+                            <input
+                                type="text"
                                 value={role}
-                                onChange={(e) => setRole(e.target.value)}
+                                readOnly
                                 className="border border-gray-600 bg-gray-700 text-gray-200 p-2 rounded w-full"
-                            >
-                                <option value="student">Student</option>
-                                <option value="staff">Staff</option>
-                            </select>
+                            />
                         </div>
 
                         {/* Request Action Button */}
@@ -276,7 +281,6 @@ const PermitPage = () => {
                             onClick={handleRequestAction}
                             className={`w-full bg-blue-600 text-white p-3 rounded ${isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-500"
                                 }`}
-
                             disabled={isLoading}
                         >
                             {isLoading ? 'Processing...' : 'Request Permit'}
